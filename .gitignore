@@ -4,6 +4,10 @@ __pycache__/
 venv/
 .env
 
+# Claude Code skills (installed via `npx skills add`)
+.claude/skills/
+.claude/skills-lock.json
+
 # frontend
 node_modules/
 .expo/
