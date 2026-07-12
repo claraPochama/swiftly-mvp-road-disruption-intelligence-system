@@ -5,3 +5,4 @@ shapely
 geopandas
 python-dotenv
 requests
+anthropic
