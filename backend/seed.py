@@ -70,52 +70,71 @@ def seed() -> None:
 
         now = datetime.now(timezone.utc)
 
-        # Institutional, inferred: Met Eireann issues a regional warning polygon,
-        # not a road ID -- resolved onto the Macroom Bypass via polygon -> segment
-        # geometry matching. Mirrors the Macroom Bypass icing incident (Irish
-        # Examiner, 2026).
+        # Cork -> Killarney: institutional, inferred. Met Eireann issues a
+        # regional high-temperature warning as a polygon, not a road ID --
+        # resolved onto the Macroom Bypass via polygon -> segment geometry
+        # matching.
         db.add(
             DisruptionRecord(
-                id="dr-n22-macroom-icing",
+                id="dr-n22-macroom-heat",
                 segment_id="n22-seg-2",
-                disruption_type="ice",
+                disruption_type="high_temperature",
                 source_category="met_eireann_warning",
                 stated_or_inferred="inferred",
-                severity="high",
+                severity="medium",
                 confidence=0.75,
                 description=(
-                    "Met Eireann regional weather warning (status yellow, low temperatures / "
-                    "icy surfaces) for Munster overlaps the Macroom Bypass. The warning is "
+                    "Met Eireann regional weather warning (status yellow, high temperatures) "
+                    "for Munster overlaps the Macroom Bypass this week, with a risk of road "
+                    "surface softening and heat stress for stranded motorists. The warning is "
                     "issued as a polygon, not a road ID, so this disruption is inferred via "
                     "polygon-to-segment geometry matching rather than stated directly."
                 ),
-                expiry=now + timedelta(hours=6),
+                expiry=now + timedelta(days=3),
             )
         )
 
-        # Community, stated: MapAlerter report carries an explicit road ID,
-        # resolved via direct road-ID lookup (Claude-parsed) rather than
-        # geometry matching.
+        # Cork -> Carrigaline: two community, stated records. MapAlerter reports
+        # carry an explicit road ID, resolved via direct road-ID lookup
+        # (Claude-parsed) rather than geometry matching. Two records so the
+        # broadcast has more than one thing to summarise.
         db.add(
             DisruptionRecord(
-                id="dr-r613-carrigaline-flood",
+                id="dr-r613-carrigaline-collision",
                 segment_id="r613-seg-2",
-                disruption_type="flood",
+                disruption_type="collision",
                 source_category="mapalerter_report",
                 stated_or_inferred="stated",
                 severity="high",
                 confidence=0.9,
                 description=(
-                    "MapAlerter community report: road impassable due to flooding on the "
-                    "R613 approaching Carrigaline. The report states the road ID directly, "
-                    "so this disruption is stated rather than inferred."
+                    "MapAlerter community report: two-car collision on the R613 approaching "
+                    "Carrigaline, one lane blocked and emergency services on scene. The report "
+                    "names the road directly, so this disruption is stated rather than inferred."
                 ),
-                expiry=now + timedelta(hours=3),
+                expiry=now + timedelta(hours=2),
+            )
+        )
+        db.add(
+            DisruptionRecord(
+                id="dr-r613-carrigaline-delays",
+                segment_id="r613-seg-1",
+                disruption_type="delay",
+                source_category="mapalerter_report",
+                stated_or_inferred="stated",
+                severity="medium",
+                confidence=0.8,
+                description=(
+                    "MapAlerter community report: long delays building on the R613 between "
+                    "Cork and Douglas, traffic backing up behind the Carrigaline collision. "
+                    "The report names the road directly, so this disruption is stated."
+                ),
+                expiry=now + timedelta(hours=2),
             )
         )
 
         db.commit()
-        print("Seeded 2 routes, their segments, and 2 disruption records.")
+        print("Seeded 2 routes, their segments, and 3 disruption records.")
     finally:
         db.close()
 
