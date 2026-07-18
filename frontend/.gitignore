@@ -1,0 +1,36 @@
+# React Native / Expo
+node_modules/
+.expo/
+.expo-shared/
+android/
+ios/
+build/
+android/app/build/
+ios/build/
+.gradle/
+local.properties
+*.jks
+*.keystore
+*.keystore.*
+*.p12
+*.p8
+*.xcworkspace
+*.xcuserdata
+*.xcodeproj/xcuserdata
+*.hprof
+*.orig
+*.log
+*.iml
+.idea/
+.vscode/
+.env
+.env.*.local
+
+# macOS
+.DS_Store
+
+# Gradle
+.gradle/
+
+# Bundler
+dist/
