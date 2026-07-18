@@ -1,0 +1,36 @@
+import 'dotenv/config';
+
+export default {
+  expo: {
+    name: 'frontend',
+    slug: 'frontend',
+    version: '1.0.0',
+    orientation: 'portrait',
+    icon: './assets/icon.png',
+    userInterfaceStyle: 'light',
+    ios: {
+      supportsTablet: true,
+    },
+    android: {
+      adaptiveIcon: {
+        backgroundColor: '#E6F4FE',
+        foregroundImage: './assets/android-icon-foreground.png',
+        backgroundImage: './assets/android-icon-background.png',
+        monochromeImage: './assets/android-icon-monochrome.png',
+      },
+      config: {
+        googleMaps: {
+          apiKey: process.env.GOOGLE_MAPS_API_KEY,
+        },
+      },
+    },
+    web: {
+      favicon: './assets/favicon.png',
+    },
+    extra: {
+      apiBaseUrl: process.env.API_BASE_URL,
+      sentryDsn: process.env.SENTRY_DSN,
+      appEnv: process.env.APP_ENV,
+    },
+  },
+};
