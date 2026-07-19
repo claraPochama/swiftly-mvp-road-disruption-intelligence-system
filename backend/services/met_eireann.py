@@ -104,19 +104,23 @@ def refresh_warnings(db) -> dict:
         for county in counties:
             segment_id = COUNTY_SEGMENT[(route_id, county)]
             for w in warnings_by_county.get(county, []):
-                # Skip Advisories (status "Advisory"); keep colour-coded Warnings.
-                if (w.get("status") or "").lower() != "warning":
+                # Keep colour-coded Warnings and lower-priority Advisories; skip
+                # anything else (e.g. Small Craft marine notices).
+                status = (w.get("status") or "").lower()
+                if status not in ("warning", "advisory"):
                     continue
-                level = (w.get("level") or "").lower()
                 cap_id = w.get("capId")
                 if cap_id in seen_cap_ids:
-                    continue  # same national warning seen via another county
+                    continue  # same national alert seen via another county
                 seen_cap_ids.add(cap_id)
 
-                severity = _level_to_severity(level)
+                is_advisory = status == "advisory"
+                # Advisories are FYIs -> "low"; Warnings use their colour level.
+                severity = "low" if is_advisory else _level_to_severity((w.get("level") or "").lower())
                 candidate = {
                     "cap_id": cap_id,
                     "segment_id": segment_id,
+                    "kind": "advisory" if is_advisory else "warning",
                     "disruption_type": _headline_to_type(w.get("headline", "")),
                     "severity": severity,
                     "confidence": _certainty_to_confidence(w.get("certainty")),
@@ -139,9 +143,9 @@ def refresh_warnings(db) -> dict:
                     severity=candidate["severity"],
                     confidence=candidate["confidence"],
                     description=(
-                        f"Met Eireann {candidate['severity']} warning, inferred onto this "
-                        f"segment via county-region matching rather than stated directly: "
-                        f"{candidate['headline']}. {candidate['description']}"
+                        f"Met Eireann {candidate['kind']} ({candidate['severity']} severity), "
+                        f"inferred onto this segment via county-region matching rather than "
+                        f"stated directly: {candidate['headline']}. {candidate['description']}"
                     ).strip(),
                     expiry=candidate["expiry"] or datetime.now(timezone.utc),
                 )
