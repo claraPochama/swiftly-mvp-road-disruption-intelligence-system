@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Polygon } from 'react-native-svg';
-import { theme } from '../theme';
+import { theme } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 
