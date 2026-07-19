@@ -47,8 +47,12 @@ class DisruptionRecord(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
     segment_id: Mapped[str] = mapped_column(ForeignKey("road_segments.id"))
     disruption_type: Mapped[str] = mapped_column(String)
-    source_category: Mapped[str] = mapped_column(String)  # e.g. "met_eireann_warning", "mapalerter_report"
+    source_category: Mapped[str] = mapped_column(String)  # e.g. "met_eireann_warning", "community_report"
     stated_or_inferred: Mapped[str] = mapped_column(String)  # "stated" | "inferred"
+    # Current lifecycle state of the disruption. "reported" -> "confirmed"
+    # (e.g. a community report confirmed by emergency personnel) -> "cleared".
+    # The full history of state changes lives in the DisruptionUpdate table.
+    status: Mapped[str] = mapped_column(String, default="reported")
     severity: Mapped[str] = mapped_column(String)
     confidence: Mapped[float] = mapped_column(Float)
     description: Mapped[str] = mapped_column(Text)
@@ -58,6 +62,29 @@ class DisruptionRecord(Base):
     )
 
     segment: Mapped["RoadSegment"] = relationship(back_populates="disruptions")
+    updates: Mapped[list["DisruptionUpdate"]] = relationship(
+        back_populates="disruption",
+        order_by="DisruptionUpdate.created_at",
+        cascade="all, delete-orphan",
+    )
+
+
+class DisruptionUpdate(Base):
+    """One entry in a disruption's update timeline, e.g. "reported" at 14:35,
+    "confirmed by emergency personnel" at 14:54. A disruption has many of these,
+    ordered by time, which is what the frontend renders as the alert timeline."""
+
+    __tablename__ = "disruption_updates"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    disruption_id: Mapped[str] = mapped_column(ForeignKey("disruption_records.id"))
+    status: Mapped[str] = mapped_column(String)  # "reported" | "confirmed" | "cleared"
+    note: Mapped[str] = mapped_column(Text)  # human-readable line for the timeline
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+
+    disruption: Mapped["DisruptionRecord"] = relationship(back_populates="updates")
 
 
 class BroadcastScript(Base):

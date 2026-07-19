@@ -1,4 +1,5 @@
 import json
+import uuid
 from collections import defaultdict
 from datetime import datetime, timezone
 
@@ -61,6 +62,31 @@ def list_disruptions(route_id: str, db: Session = Depends(get_db)):
     return _matched_disruptions(db, route)
 
 
+@router.post("/disruptions/{disruption_id}/updates", response_model=schemas.DisruptionOut)
+def add_disruption_update(
+    disruption_id: str, update: schemas.DisruptionUpdateIn, db: Session = Depends(get_db)
+):
+    """Append one entry to a disruption's update timeline (e.g. a user report,
+    then an emergency-personnel confirmation) and advance the disruption's
+    current status to match. Returns the disruption with its full timeline."""
+    disruption = db.get(models.DisruptionRecord, disruption_id)
+    if disruption is None:
+        raise HTTPException(status_code=404, detail="Disruption not found")
+
+    db.add(
+        models.DisruptionUpdate(
+            id=f"du-{uuid.uuid4().hex[:12]}",
+            disruption_id=disruption_id,
+            status=update.status,
+            note=update.note,
+        )
+    )
+    disruption.status = update.status
+    db.commit()
+    db.refresh(disruption)
+    return disruption
+
+
 @router.get("/routes/{route_id}/geometry", response_model=list[schemas.SegmentGeometryOut])
 def route_geometry(route_id: str, db: Session = Depends(get_db)):
     route = db.get(models.Route, route_id)
@@ -110,7 +136,7 @@ def route_overlay(route_id: str, db: Session = Depends(get_db)):
                         d.source_category == "met_eireann_warning" for d in seg_disruptions
                     ),
                     has_community=any(
-                        d.source_category == "mapalerter_report" for d in seg_disruptions
+                        d.source_category == "community_report" for d in seg_disruptions
                     ),
                     disruptions=seg_disruptions,
                 ),

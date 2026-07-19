@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from database import Base, SessionLocal, engine
-from models import DisruptionRecord, RoadSegment, Route, RouteSegment
+from models import DisruptionRecord, DisruptionUpdate, RoadSegment, Route, RouteSegment
 
 SEED_DIR = Path(__file__).parent / "seed_data"
 
@@ -81,6 +81,7 @@ def seed() -> None:
                 disruption_type="high_temperature",
                 source_category="met_eireann_warning",
                 stated_or_inferred="inferred",
+                status="confirmed",
                 severity="medium",
                 confidence=0.75,
                 description=(
@@ -94,21 +95,23 @@ def seed() -> None:
             )
         )
 
-        # Cork -> Carrigaline: two community, stated records. MapAlerter reports
-        # carry an explicit road ID, resolved via direct road-ID lookup
-        # (Claude-parsed) rather than geometry matching. Two records so the
-        # broadcast has more than one thing to summarise.
+        # Cork -> Carrigaline: two community, stated records. A community report
+        # is filed by a member of the public naming the road directly, so it is
+        # stated (resolved via direct road-ID lookup rather than geometry
+        # matching). Two records so the broadcast has more than one thing to
+        # summarise.
         db.add(
             DisruptionRecord(
                 id="dr-r613-carrigaline-collision",
                 segment_id="r613-seg-2",
                 disruption_type="collision",
-                source_category="mapalerter_report",
+                source_category="community_report",
                 stated_or_inferred="stated",
+                status="confirmed",
                 severity="high",
                 confidence=0.9,
                 description=(
-                    "MapAlerter community report: two-car collision on the R613 approaching "
+                    "Community report: two-car collision on the R613 approaching "
                     "Carrigaline, one lane blocked and emergency services on scene. The report "
                     "names the road directly, so this disruption is stated rather than inferred."
                 ),
@@ -120,12 +123,13 @@ def seed() -> None:
                 id="dr-r613-carrigaline-delays",
                 segment_id="r613-seg-1",
                 disruption_type="delay",
-                source_category="mapalerter_report",
+                source_category="community_report",
                 stated_or_inferred="stated",
+                status="reported",
                 severity="medium",
                 confidence=0.8,
                 description=(
-                    "MapAlerter community report: long delays building on the R613 between "
+                    "Community report: long delays building on the R613 between "
                     "Cork and Douglas, traffic backing up behind the Carrigaline collision. "
                     "The report names the road directly, so this disruption is stated."
                 ),
@@ -133,8 +137,37 @@ def seed() -> None:
             )
         )
 
+        # Update timelines. The collision was reported by a member of the public,
+        # then confirmed by emergency personnel on scene -- exactly the alert
+        # timeline the frontend renders per disruption.
+        db.add_all(
+            [
+                DisruptionUpdate(
+                    id="du-collision-1",
+                    disruption_id="dr-r613-carrigaline-collision",
+                    status="reported",
+                    note="Two-car collision reported by a member of the public on the R613.",
+                    created_at=now - timedelta(minutes=19),
+                ),
+                DisruptionUpdate(
+                    id="du-collision-2",
+                    disruption_id="dr-r613-carrigaline-collision",
+                    status="confirmed",
+                    note="Emergency personnel confirmed on scene, one lane blocked.",
+                    created_at=now,
+                ),
+                DisruptionUpdate(
+                    id="du-delays-1",
+                    disruption_id="dr-r613-carrigaline-delays",
+                    status="reported",
+                    note="Delays reported building behind the Carrigaline collision.",
+                    created_at=now - timedelta(minutes=8),
+                ),
+            ]
+        )
+
         db.commit()
-        print("Seeded 2 routes, their segments, and 3 disruption records.")
+        print("Seeded 2 routes, their segments, 3 disruption records, and their update timelines.")
     finally:
         db.close()
 

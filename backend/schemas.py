@@ -11,15 +11,31 @@ class RouteOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class DisruptionUpdateOut(BaseModel):
+    id: str
+    status: str
+    note: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class DisruptionUpdateIn(BaseModel):
+    status: str  # "reported" | "confirmed" | "cleared"
+    note: str  # the timeline line, e.g. "Emergency personnel confirmed on scene"
+
+
 class DisruptionOut(BaseModel):
     id: str
     segment_id: str
     disruption_type: str
     source_category: str
     stated_or_inferred: str
+    status: str
     severity: str
     confidence: float
     expiry: datetime
+    updates: list[DisruptionUpdateOut] = []
 
     model_config = {"from_attributes": True}
 
@@ -50,7 +66,7 @@ class OverlayProperties(BaseModel):
     has_disruption: bool
     worst_severity: str | None  # "low" | "medium" | "high" | None
     has_institutional: bool  # any met_eireann_warning
-    has_community: bool  # any mapalerter_report
+    has_community: bool  # any community_report
     disruptions: list[DisruptionOut]
 
 

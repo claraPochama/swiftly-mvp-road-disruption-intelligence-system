@@ -25,11 +25,13 @@ into a short spoken-radio-style text broadcast.
 Each disruption record has these fields:
 - disruption_type: the hazard (e.g. ice, flood).
 - source_category: where it came from. "met_eireann_warning" is an \
-institutional/official source; "mapalerter_report" is a community-sourced \
-report.
+institutional/official source; "community_report" is filed by a member of the \
+public and may later be confirmed by emergency personnel.
 - stated_or_inferred: "stated" means the source named the road directly; \
 "inferred" means the location was derived (e.g. a weather-warning polygon \
 matched onto a road segment) and is therefore less certain.
+- status: the disruption's lifecycle state -- "reported" (not yet confirmed), \
+"confirmed" (verified, e.g. by emergency personnel on scene), or "cleared".
 - severity: low, medium, or high.
 - confidence: 0.0-1.0, how sure we are.
 - segment_id: which road segment it affects.
@@ -42,8 +44,9 @@ warning or a community report, and whether the location is confirmed \
 (stated) or inferred. This distinction is the point of the system — never \
 drop it.
 - Convey lower confidence with hedged language ("reported", "unconfirmed", \
-"possible") and higher confidence plainly.
-- Keep it concise and clear enough to read aloud. Plain text only — no \
+"possible") and higher confidence plainly. A "reported" status is unconfirmed; \
+say so, and note when a report has been "confirmed" by emergency personnel.
+- Keep it concise and clear enough to read aloud. Plain text only, no \
 markdown, no bullet points, no headings.
 - Do not invent disruptions or details beyond the records provided."""
 
@@ -60,6 +63,7 @@ def _records_payload(route: "models.Route", disruptions: list["models.Disruption
                     "disruption_type": d.disruption_type,
                     "source_category": d.source_category,
                     "stated_or_inferred": d.stated_or_inferred,
+                    "status": d.status,
                     "severity": d.severity,
                     "confidence": d.confidence,
                     "segment_id": d.segment_id,

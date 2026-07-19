@@ -9,7 +9,7 @@ a hand-written seed.
 
 Records created here are id-prefixed "live-metie-" so the read layer in
 routers/routes.py can let them override the static seed fallback. The
-community MapAlerter records are never touched.
+community_report records are never touched.
 
 Async note: PyMetEireann is aiohttp-based; refresh_warnings() wraps the async
 fetch in asyncio.run() so the existing sync endpoints and sync SQLAlchemy
@@ -140,6 +140,7 @@ def refresh_warnings(db) -> dict:
                     disruption_type=candidate["disruption_type"],
                     source_category="met_eireann_warning",
                     stated_or_inferred="inferred",
+                    status="confirmed",  # official warnings are verified at source
                     severity=candidate["severity"],
                     confidence=candidate["confidence"],
                     description=(
