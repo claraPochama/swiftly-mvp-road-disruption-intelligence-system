@@ -9,6 +9,7 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import SignupScreen from '../screens/auth/SignupScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import VerifyAccountScreen from '../screens/auth/VerifyAccountScreen';
+import MainTabNavigator from './MainTabNavigator';
 import PlaceholderScreen from '../screens/PlaceholderScreen';
 
 const Stack = createNativeStackNavigator();
@@ -45,9 +46,7 @@ export default function RootNavigator() {
 
       <Stack.Screen name="VerifyAccount" component={VerifyAccountScreen} />
 
-      <Stack.Screen name="MainApp">
-        {() => <PlaceholderScreen label="Main App (bottom tabs)" />}
-      </Stack.Screen>
+      <Stack.Screen name="MainApp" component={MainTabNavigator} />
     </Stack.Navigator>
   );
 }
