@@ -2,15 +2,27 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { theme } from '../theme';
 
 // Usage: <SimpleHeader title="Forgot Password" onBack={() => navigation.goBack()} />
+// Omit onBack for a tab-root screen (e.g. Alerts) — title centers and no
+// back arrow shows.
 // Pass backgroundColor to override the header's green, and titleColor/arrowColor
 // to override the text/arrow color on a specific screen.
 export default function SimpleHeader({ title, onBack, backgroundColor, titleColor, arrowColor }) {
   return (
     <View style={[styles.header, backgroundColor && { backgroundColor }]}>
-      <Pressable onPress={onBack} style={styles.backButton} hitSlop={12}>
-        <Text style={[styles.backArrow, arrowColor && { color: arrowColor }]}>‹</Text>
-      </Pressable>
-      <Text style={[styles.title, titleColor && { color: titleColor }]}>{title}</Text>
+      {onBack && (
+        <Pressable onPress={onBack} style={styles.backButton} hitSlop={12}>
+          <Text style={[styles.backArrow, arrowColor && { color: arrowColor }]}>‹</Text>
+        </Pressable>
+      )}
+      <Text
+        style={[
+          styles.title,
+          titleColor && { color: titleColor },
+          !onBack && styles.titleCentered,
+        ]}
+      >
+        {title}
+      </Text>
     </View>
   );
 }

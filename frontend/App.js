@@ -4,6 +4,7 @@ import { Poppins_400Regular, Poppins_500Medium } from '@expo-google-fonts/poppin
 import { Aboreto_400Regular } from '@expo-google-fonts/aboreto';
 import { View } from 'react-native';
 import RootNavigator from './src/navigation/RootNavigator';
+import { UserTypeProvider } from './src/context/UserTypeContext';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -18,8 +19,10 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <RootNavigator />
-    </NavigationContainer>
+    <UserTypeProvider>
+      <NavigationContainer>
+        <RootNavigator />
+      </NavigationContainer>
+    </UserTypeProvider>
   );
 }
