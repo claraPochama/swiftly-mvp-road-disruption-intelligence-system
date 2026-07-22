@@ -50,10 +50,10 @@ institutional sources (`met_eireann_warning`, `council_notice`) or
 
 ## `GET /routes/{route_id}/disruptions`
 
-Returns `DisruptionOut[]` matched to the route's segments — the **driver-facing**
-view. Community reports appear here only once `status` is `confirmed`;
-unconfirmed ones are withheld (see `GET /disruptions/pending`). Reflects live
-Met Éireann overrides.
+Returns `DisruptionOut[]` matched to the route's segments — the view **everyone**
+sees. Unconfirmed community reports **are** included here (`status: "reported"`);
+render them with an "unverified" badge. They are excluded only from the spoken
+broadcast, not from this list. Reflects live Met Éireann overrides.
 
 ```json
 [ "... DisruptionOut objects ..." ]
@@ -63,7 +63,10 @@ Met Éireann overrides.
 
 Generates a text broadcast script from the route's currently matched
 disruption records. No request body — route context comes entirely from
-the path parameter.
+the path parameter. This is the one place the verification gate applies:
+unconfirmed community reports are excluded, so the bulletin only voices
+confirmed or institutional information (even though they still show on the
+list and overlay).
 
 ```json
 {
@@ -96,7 +99,9 @@ Map-ready GeoJSON `FeatureCollection`: one `Feature` per segment, whose
 `worst_severity` and by source (`has_institutional` / `has_community`).
 `has_institutional` is true for either institutional source (`met_eireann_warning`
 or `council_notice`). Reflects live Met Éireann overrides, and — like the
-disruptions endpoint — excludes unconfirmed community reports.
+disruptions endpoint — **includes** unconfirmed community reports (`status:
+"reported"`), so `has_community` can be true for an unverified report; only the
+broadcast filters them out.
 
 ```json
 {
@@ -127,7 +132,8 @@ disruptions endpoint — excludes unconfirmed community reports.
 A public user files a community disruption report on this route. This is the
 only endpoint where the frontend sends content. The backend fixes
 `source_category="community_report"`, `stated_or_inferred="stated"` and
-`status="reported"`; the report is **hidden from drivers and broadcasts** until
+`status="reported"`; the report is **visible to everyone as unverified** on the
+disruptions list and overlay, but is **kept out of the spoken broadcast** until
 emergency personnel confirm it. `segment_id` must be one of the route's segments
 (otherwise `422`).
 
