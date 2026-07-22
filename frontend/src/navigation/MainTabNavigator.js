@@ -2,7 +2,7 @@ import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { theme } from '../theme';
 import { useUserType } from '../context/UserTypeContext';
-import MapScreen from '../screens/shared/MapScreen';
+import MapStackNavigator from './MapStackNavigator';
 import AlertsStackNavigator from './AlertsStackNavigator';
 import WeekAheadScreen from '../screens/shared/WeekAheadScreen';
 import ProfileScreen from '../screens/shared/ProfileScreen';
@@ -46,7 +46,7 @@ export default function MainTabNavigator() {
         tabBarIcon: () => <Text style={{ fontSize: 18 }}>{TAB_ICONS[route.name]}</Text>,
       })}
     >
-      <Tab.Screen name="Map" component={MapScreen} />
+      <Tab.Screen name="Map" component={MapStackNavigator} />
       <Tab.Screen name="Alerts" component={AlertsStackNavigator} />
       <Tab.Screen name="Week Ahead" component={WeekAheadScreen} />
 
