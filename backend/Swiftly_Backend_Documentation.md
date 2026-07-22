@@ -13,7 +13,7 @@ A plain-language guide to the backend: what it does, how it's put together, and 
 5. File-by-file map -- with the "models = what data is / services = the hard work" rule of thumb
 6. MVP Data model -- the six tables, with an entity-relationship diagram
 7. API endpoints -- each URL in plain language, incl. GET-vs-POST explained
-8. Dataflows -- sequence diagrams for setup, reading disruptions, broadcast generation (Claude), warning refresh, and the map overlay
+8. Dataflows -- sequence diagrams for setup, reading disruptions, broadcast generation (Claude), warning refresh, the map overlay, and the community report lifecycle
 9. How the AI is used -- what Claude does, and how the system prompt is designed
 10. How data reaches the frontend -- JSON-over-HTTP, the schema contract, a per-screen table, the "frontend only sends a route_id" design point, and a CORS heads-up
 11. Outside services -- which need keys (only Claude)
@@ -43,21 +43,26 @@ The backend is the "engine room". The MVP for now:
 Not all disruption information is equal, and the system is built to make that visible. Every disruption is labelled on two axes:
 
 - **Where it came from** -- `source_category`:
-  - **institutional** (`met_eireann_warning`): an official body, e.g. a Met
-    Éireann weather warning.
+  - **institutional** -- an official body. Two kinds in the MVP:
+    - `met_eireann_warning`: a Met Éireann weather warning.
+    - `council_notice`: a Cork County Council road notice (e.g. a MapAlerter
+      resurfacing/roadworks alert).
   - **community** (`community_report`): a member of the public reports the
-    disruption directly, which emergency personnel may then confirm.
+    disruption directly. It stays **hidden from drivers until emergency
+    personnel confirm it** (see the verification gate in sections 6 and 8g).
 - **How sure we are about its location** -- `stated_or_inferred`:
   - **stated** -- the source named the exact road (high certainty).
   - **inferred** -- we matched the location ourselves (lower certainty). For example, Met Éireann issues a warning for a whole county, not a road, so we "infer" which road segments fall inside that county. 
 
-> **Note on community reports:** in this MVP a *community report* is a
-> public-user report that emergency personnel can confirm (see the update
-> timeline in section 6). It is **not** MapAlerter -- MapAlerter is a Cork
-> County Council service and is deliberately out of scope for the MVP.
+These two axes give a 2×2 provenance grid, and the MVP seeds one disruption in
+each demonstrated cell so every combination is visible:
 
-The broadcast deliberately keeps this distinction audible ("an official warning, but the location is inferred…" vs "a community report naming the road
-directly"). That contrast is the whole point of the project.
+| | **stated** (road named) | **inferred** (we matched it) |
+|---|---|---|
+| **institutional** | Cork County Council road notice (`council_notice`) | Met Éireann county warning (`met_eireann_warning`) |
+| **community** | Community report, once confirmed (`community_report`) | — |
+
+The broadcast deliberately keeps this distinction audible ("an official warning, but the location is inferred…" vs "a community report naming the road directly"). That contrast is the whole point of the project.
 
 ---
 
@@ -195,17 +200,11 @@ In words:
 - **Route** -- a journey, e.g. "Cork to Killarney". There are exactly two hardcoded in the MVP.
 - **RoadSegment** -- one stretch of road, with its real map geometry. E.g. "Ballincollig to Macroom (Macroom Bypass)".
 - **RouteSegment** -- the link table saying which segments make up which route, and in what order (a route is a sequence of segments).
-- **DisruptionRecord** -- one problem on one segment, carrying the source and certainty labels from section 2, plus a `status` (`reported` -> `confirmed` -> `cleared`) holding its *current* state.
-- **DisruptionUpdate** -- one entry in a disruption's **update timeline** (e.g. "14:35 reported", "14:54 confirmed by emergency personnel"). A disruption has many, ordered by time; this is what the frontend's alert screen renders as a timeline. *(Added after the original five-table design -- see the note below.)*
+- **DisruptionRecord** -- one problem on one segment, carrying the source and certainty labels from section 2, plus a `status` (`reported` -> `confirmed` -> `cleared`) holding its *current* state. `source_category` is one of `met_eireann_warning`, `council_notice` (both institutional) or `community_report`. A community report is created at `status="reported"` and is withheld from drivers until emergency personnel confirm it; institutional records are shown straight away. Note there is **no separate report table** -- a community report is just a `DisruptionRecord`, which keeps the MVP model at six tables.
+- **DisruptionUpdate** -- one entry in a disruption's **update timeline** (e.g. "14:35 reported", "14:54 confirmed by emergency personnel"). A disruption has many, ordered by time; this is what the frontend's alert screen renders as a timeline. *(Added after the original five-table design; see the note below.)*
 - **BroadcastScript** -- a saved copy of each broadcast Claude generated.
 
-> **Design change -- update timeline (added post-v1).** The original data model
-> had five tables and no per-disruption history: a `DisruptionRecord` carried a
-> single `created_at` and no `status`, so the frontend could show *that* a
-> disruption existed but not how it had progressed. To support the alert-screen
-> timeline in the Figma prototype, we (a) restored the `status` field on
-> `DisruptionRecord` and (b) added the **`DisruptionUpdate`** child table above.
-> Everything else is unchanged; this is a purely additive extension.
+> **Design change -- update timeline.** To support the alert-screen timeline in the Figma prototype, we added the **`DisruptionUpdate`** child table above, which was not included in Sprint 3 plan. 
 
 ---
 
@@ -221,7 +220,9 @@ The first three are the **public contract** the frontend depends on; the rest ar
 | `POST /routes/{id}/broadcast` | "Write me a spoken bulletin for this route." |
 | `GET /routes/{id}/geometry` | "Give me the road lines so I can draw the route on a map." |
 | `GET /routes/{id}/overlay` | "Give me the road lines **plus** a per-segment problem summary, ready to colour on a map." |
-| `POST /disruptions/{id}/updates` | "Add a timeline entry to this disruption (e.g. emergency personnel confirmed it) and advance its status." |
+| `POST /routes/{id}/reports` | "A member of the public files a disruption report on this route." Stored as an unconfirmed `community_report`, hidden from drivers until confirmed. |
+| `GET /disruptions/pending` | "List the community reports awaiting confirmation." The emergency-personnel review queue. |
+| `POST /disruptions/{id}/updates` | "Add a timeline entry to this disruption (e.g. emergency personnel confirmed it) and advance its status." This is also how a pending report is **confirmed**. |
 | `POST /admin/refresh-warnings` | "Go fetch the latest Met Éireann warnings now." (operator action, not used by the app) |
 
 > **GET vs POST**: `GET` means "just give me information" (safe, read-only).
@@ -335,6 +336,35 @@ sequenceDiagram
 
 The frontend re-reads 8b (`GET /routes/{id}/disruptions`) to render the timeline; the `updates` are already nested in that response, so no extra call is needed just to display it.
 
+### 8g. The community report lifecycle (submit → verify → publish)
+
+A member of the public reports a disruption; it is **not** shown to other drivers until emergency personnel confirm it. This verification gate is what makes the "verified vs unverified" thesis real.
+
+```mermaid
+sequenceDiagram
+    participant PU as Public user
+    participant EP as Emergency personnel
+    participant API as Backend
+    participant DB as Database
+    PU->>API: POST /routes/{id}/reports (segment, type, severity, text)
+    API->>DB: create community_report, status="reported"
+    Note over API,DB: hidden from drivers/broadcasts<br/>(_matched_disruptions withholds<br/>unconfirmed community reports)
+    EP->>API: GET /disruptions/pending
+    API->>DB: community reports still "reported"
+    DB-->>EP: the review queue
+    EP->>API: POST /disruptions/{id}/updates { status: "confirmed" }
+    API->>DB: append timeline entry, set status="confirmed"
+    Note over API,DB: now visible to drivers,<br/>broadcasts and the map overlay
+```
+
+Key points:
+
+- The create endpoint always fixes `source_category="community_report"` and `stated_or_inferred="stated"` (a public reporter names the road directly). The client can't spoof an institutional source.
+- The gate lives in one place -- `_matched_disruptions` (8b) -- so the disruptions list, the broadcast and the map overlay all agree that an unconfirmed report is invisible to drivers.
+- The two seeded R613 community reports show both states out of the box: the collision is already `confirmed` (visible), the delay is still `reported` (sits in the pending queue).
+
+> **Who can confirm?** "Only emergency personnel confirm" is a rule the frontend enforces by role; the backend endpoint itself is currently **unauthenticated** in the MVP. Adding a real role check is noted as future work in section 13.
+
 ---
 
 ## 9. How Claude (the AI) is used, and how the prompt is designed
@@ -423,11 +453,13 @@ FastAPI checks each response against these before sending it, so the frontend ca
 | Route picker | `GET /routes` | list the two journeys to choose from |
 | Disruption list | `GET /routes/{id}/disruptions` | show each problem with a **source badge** (institutional vs community) and severity |
 | Alert detail / timeline | `GET /routes/{id}/disruptions` | render each disruption's `status` and its `updates` list as a time-stamped **update timeline** |
+| Submit a report (public user) | `POST /routes/{id}/reports` | send the segment, disruption type, severity and description; the report enters the pending queue |
+| Emergency-personnel review queue | `GET /disruptions/pending` | list community reports awaiting confirmation |
 | Confirm / update a disruption | `POST /disruptions/{id}/updates` | append a timeline entry (e.g. "confirmed by emergency personnel") and advance its status |
 | "Generate broadcast" button | `POST /routes/{id}/broadcast` | display the returned `script_text` |
 | Map view | `GET /routes/{id}/overlay` | draw each road segment and **colour it** by `worst_severity` + source |
 
-**One deliberate design point:** the frontend never sends free text to the backend. It only ever sends back a `route_id` that it originally got from `GET /routes`. This keeps the two halves loosely coupled, so that the frontend doesn't need to know anything about roads, weather, or Claude; it just picks a route and renders whatever JSON comes back.
+**A note on coupling.** For everything *read-only* -- routes, disruptions, geometry, overlay, broadcast -- the frontend sends only a `route_id` it originally got from `GET /routes`, and just renders whatever JSON comes back; it needs to know nothing about roads, weather or Claude. The **one** place the frontend sends real content is the community-report submission (`POST /routes/{id}/reports`), where a public user's structured report -- segment, type, severity, description -- is posted for emergency personnel to review. That single write path is the deliberate exception to the otherwise read-only, loosely-coupled contract.
 
 > **Note (CORS):** a React Native app talks to the API directly with no problem. If the frontend is ever run in a **web browser** (e.g. Expo web), the browser will block cross-origin calls until a small piece of "CORS middleware" is added to `main.py`. It isn't configured yet, which now is perceived as a known, one-line gap noted for later.
 
@@ -485,6 +517,8 @@ The main ones, and what we gave up:
 | **Advisories included, ranked below Warnings** | Ireland almost always has some advisory active, so the live demo rarely comes up empty | Slightly more "noise"; advisories are lower-value than colour-coded warnings |
 | **New endpoints are additive; the original 3 never changed** | The frontend developer's existing work never breaks | The API surface grows over time rather than staying minimal |
 | **Overlay bundles geometry + disruptions together** | The map gets everything it needs in **one** request, with no client-side joining | The response is larger and a little "denormalised" (some data restated) |
+| **Community reports gated behind emergency-personnel confirmation** | The verified-vs-unverified thesis: a raw public report never reaches other drivers until an official confirms it | A real report isn't public until someone acts; and the "only personnel confirm" rule is enforced by the frontend role only -- the endpoint is currently unauthenticated (adding a role/auth check is future work) |
+| **Cork County Council notice seeded, not live-ingested** | Fills the institutional+stated cell of the provenance grid without building live email/MapAlerter polling (which adds IMAP, parsing and unconfirmed terms-of-use risk) | The council notice is static demo data, not a live feed; live ingestion is left for a later sprint |
 
 The throughline: every trade-off buys **less complexity now** at the cost of **less flexibility later**, which we believe is the right call for a capstone MVP whose goal is to demonstrate the idea, not to run in production.
 
@@ -500,7 +534,12 @@ The throughline: every trade-off buys **less complexity now** at the cost of **l
 - **GeoJSON / LineString** -- a text format for map shapes; a road is a list of
   points.
 - **Segment** -- one stretch of road; a route is an ordered list of segments.
-- **Institutional vs community** -- official source vs public report.
+- **Institutional vs community** -- official source (Met Éireann warning or Cork
+  County Council notice) vs a public report.
+- **Council notice** -- a Cork County Council road alert (`council_notice`); an
+  institutional source that names the road directly (so it is *stated*).
+- **Verification gate** -- a community report stays hidden from drivers until
+  emergency personnel confirm it; unconfirmed ones live in the pending queue.
 - **Stated vs inferred** -- exact location given vs location we worked out.
 - **Seed data** -- the starting data loaded into an empty database.
 - **System prompt** -- the fixed instructions given to Claude before the data.
