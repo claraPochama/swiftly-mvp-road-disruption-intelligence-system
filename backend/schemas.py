@@ -25,6 +25,19 @@ class DisruptionUpdateIn(BaseModel):
     note: str  # the timeline line, e.g. "Emergency personnel confirmed on scene"
 
 
+class DisruptionReportIn(BaseModel):
+    """A community disruption report submitted by a member of the public. The
+    backend fixes source_category="community_report", stated_or_inferred="stated"
+    (a public reporter names the road directly) and status="reported"; the record
+    stays out of driver views until emergency personnel confirm it."""
+
+    segment_id: str  # must be one of the route's segments
+    disruption_type: str  # e.g. "collision", "flood", "roadworks"
+    severity: str  # "low" | "medium" | "high"
+    description: str
+    note: str | None = None  # optional first timeline line; a default is used if absent
+
+
 class DisruptionOut(BaseModel):
     id: str
     segment_id: str
@@ -65,7 +78,7 @@ class OverlayProperties(BaseModel):
     disruption_count: int
     has_disruption: bool
     worst_severity: str | None  # "low" | "medium" | "high" | None
-    has_institutional: bool  # any met_eireann_warning
+    has_institutional: bool  # any institutional source (met_eireann_warning or council_notice)
     has_community: bool  # any community_report
     disruptions: list[DisruptionOut]
 

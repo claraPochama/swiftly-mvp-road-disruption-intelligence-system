@@ -1,7 +1,7 @@
 import json
 import uuid
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -16,6 +16,12 @@ router = APIRouter()
 
 _SEVERITY_RANK = {"low": 0, "medium": 1, "high": 2}
 
+# How long a fresh community report stays live before it expires, unless
+# emergency personnel act on it sooner.
+_REPORT_EXPIRY_HOURS = 6
+
+_INSTITUTIONAL_SOURCES = ("met_eireann_warning", "council_notice")
+
 
 def _worst_severity(disruptions: list["models.DisruptionRecord"]) -> str | None:
     if not disruptions:
@@ -24,10 +30,15 @@ def _worst_severity(disruptions: list["models.DisruptionRecord"]) -> str | None:
 
 
 def _matched_disruptions(db: Session, route: "models.Route") -> list["models.DisruptionRecord"]:
-    """Disruption records matched to a route's segments, with the live-warning
-    override applied: when a live Met Eireann record (id prefixed "live-metie-")
-    exists for the route, the static seeded institutional record is suppressed
-    so we don't show both. Community records are always returned."""
+    """Disruption records matched to a route's segments, as shown to *everyone*
+    on the disruption list and map overlay. Unconfirmed community reports ARE
+    included here (the frontend shows them with an "unverified" badge via their
+    `status`); the only filtering is the live-warning override: when a live Met
+    Eireann record (id prefixed "live-metie-") exists for the route, the static
+    seeded institutional record is suppressed so we don't show both.
+
+    The verification gate is applied separately, and only to the broadcast, by
+    _broadcastable() below."""
     segment_ids = [rs.segment_id for rs in route.segments]
     if not segment_ids:
         return []
@@ -49,6 +60,21 @@ def _matched_disruptions(db: Session, route: "models.Route") -> list["models.Dis
     return records
 
 
+def _broadcastable(
+    disruptions: list["models.DisruptionRecord"],
+) -> list["models.DisruptionRecord"]:
+    """The subset of matched disruptions allowed into the spoken broadcast.
+    Unconfirmed community reports are visible on the map/list but are withheld
+    from the broadcast until emergency personnel confirm them, so the audio
+    bulletin only voices verified or institutional information. Institutional
+    records (Met Eireann, council) are always broadcastable."""
+    return [
+        d
+        for d in disruptions
+        if not (d.source_category == "community_report" and d.status != "confirmed")
+    ]
+
+
 @router.get("/routes", response_model=list[schemas.RouteOut])
 def list_routes(db: Session = Depends(get_db)):
     return db.scalars(select(models.Route)).all()
@@ -60,6 +86,64 @@ def list_disruptions(route_id: str, db: Session = Depends(get_db)):
     if route is None:
         raise HTTPException(status_code=404, detail="Route not found")
     return _matched_disruptions(db, route)
+
+
+@router.post(
+    "/routes/{route_id}/reports", response_model=schemas.DisruptionOut, status_code=201
+)
+def submit_community_report(
+    route_id: str, report: schemas.DisruptionReportIn, db: Session = Depends(get_db)
+):
+    """A member of the public files a community disruption report on this route.
+    It is stored as an unconfirmed community record (source_category
+    "community_report", stated, status "reported") and is deliberately hidden
+    from drivers and broadcasts until emergency personnel confirm it via
+    POST /disruptions/{id}/updates. Personnel find it via GET /disruptions/pending."""
+    route = db.get(models.Route, route_id)
+    if route is None:
+        raise HTTPException(status_code=404, detail="Route not found")
+
+    if report.segment_id not in {rs.segment_id for rs in route.segments}:
+        raise HTTPException(status_code=422, detail="segment_id is not part of this route")
+
+    disruption_id = f"cr-{uuid.uuid4().hex[:12]}"
+    disruption = models.DisruptionRecord(
+        id=disruption_id,
+        segment_id=report.segment_id,
+        disruption_type=report.disruption_type,
+        source_category="community_report",
+        stated_or_inferred="stated",  # a public reporter names the road directly
+        status="reported",
+        severity=report.severity,
+        confidence=0.5,  # provisional; personnel confirmation is what raises trust
+        description=report.description,
+        expiry=datetime.now(timezone.utc) + timedelta(hours=_REPORT_EXPIRY_HOURS),
+    )
+    db.add(disruption)
+    db.add(
+        models.DisruptionUpdate(
+            id=f"du-{uuid.uuid4().hex[:12]}",
+            disruption_id=disruption_id,
+            status="reported",
+            note=report.note or "Disruption reported by a member of the public.",
+        )
+    )
+    db.commit()
+    db.refresh(disruption)
+    return disruption
+
+
+@router.get("/disruptions/pending", response_model=list[schemas.DisruptionOut])
+def list_pending_reports(db: Session = Depends(get_db)):
+    """The emergency-personnel review queue: community reports still awaiting
+    confirmation. These are hidden from drivers and broadcasts (see
+    _matched_disruptions) until a confirmation advances them to "confirmed"."""
+    return db.scalars(
+        select(models.DisruptionRecord).where(
+            models.DisruptionRecord.source_category == "community_report",
+            models.DisruptionRecord.status == "reported",
+        )
+    ).all()
 
 
 @router.post("/disruptions/{disruption_id}/updates", response_model=schemas.DisruptionOut)
@@ -133,7 +217,7 @@ def route_overlay(route_id: str, db: Session = Depends(get_db)):
                     has_disruption=bool(seg_disruptions),
                     worst_severity=_worst_severity(seg_disruptions),
                     has_institutional=any(
-                        d.source_category == "met_eireann_warning" for d in seg_disruptions
+                        d.source_category in _INSTITUTIONAL_SOURCES for d in seg_disruptions
                     ),
                     has_community=any(
                         d.source_category == "community_report" for d in seg_disruptions
@@ -151,7 +235,7 @@ def generate_broadcast(route_id: str, db: Session = Depends(get_db)):
     if route is None:
         raise HTTPException(status_code=404, detail="Route not found")
 
-    disruptions = _matched_disruptions(db, route)
+    disruptions = _broadcastable(_matched_disruptions(db, route))
     script_text = broadcast.generate_script(route, disruptions)
     generated_at = datetime.now(timezone.utc)
 

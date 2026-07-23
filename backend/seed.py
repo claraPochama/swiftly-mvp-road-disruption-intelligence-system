@@ -1,6 +1,8 @@
 """Populate the SQLite DB with the locked-scope fixture data: 2 routes,
-their real-geometry segments (from seed_data/*.geojson), and the 2 seed
-disruption records (one institutional/inferred, one community/stated).
+their real-geometry segments (from seed_data/*.geojson), and 4 seed disruption
+records spanning the provenance grid: institutional/inferred (Met Eireann),
+institutional/stated (Cork County Council notice), and community/stated (two
+public reports, one confirmed and one still pending).
 
 Run once, from backend/:
 
@@ -95,6 +97,32 @@ def seed() -> None:
             )
         )
 
+        # Cork -> Killarney: institutional, STATED. A Cork County Council road
+        # notice (modelled on the real MapAlerter "N20 Ballyhay resurfacing"
+        # alert) names the road directly, so unlike the Met Eireann polygon
+        # warning above it is stated, not inferred. This fills the fourth cell
+        # of the provenance grid: institutional + stated.
+        db.add(
+            DisruptionRecord(
+                id="dr-n22-ballincollig-resurfacing",
+                segment_id="n22-seg-1",
+                disruption_type="roadworks",
+                source_category="council_notice",
+                stated_or_inferred="stated",
+                status="confirmed",
+                severity="low",
+                confidence=0.95,
+                description=(
+                    "Cork County Council road notice: overnight road resurfacing on the "
+                    "N22 Cork-to-Ballincollig stretch, Tuesday to Friday 19:00-07:00 "
+                    "(night works). Temporary stop/go shuttle system in operation, expect "
+                    "delays, use an alternative route where possible. The notice names the "
+                    "road directly, so this disruption is stated rather than inferred."
+                ),
+                expiry=now + timedelta(days=4),
+            )
+        )
+
         # Cork -> Carrigaline: two community, stated records. A community report
         # is filed by a member of the public naming the road directly, so it is
         # stated (resolved via direct road-ID lookup rather than geometry
@@ -167,7 +195,7 @@ def seed() -> None:
         )
 
         db.commit()
-        print("Seeded 2 routes, their segments, 3 disruption records, and their update timelines.")
+        print("Seeded 2 routes, their segments, 4 disruption records, and their update timelines.")
     finally:
         db.close()
 

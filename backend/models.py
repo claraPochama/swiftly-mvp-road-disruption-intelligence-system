@@ -47,7 +47,9 @@ class DisruptionRecord(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
     segment_id: Mapped[str] = mapped_column(ForeignKey("road_segments.id"))
     disruption_type: Mapped[str] = mapped_column(String)
-    source_category: Mapped[str] = mapped_column(String)  # e.g. "met_eireann_warning", "community_report"
+    # "met_eireann_warning" and "council_notice" are institutional; "community_report"
+    # is a public report that stays hidden from drivers until personnel confirm it.
+    source_category: Mapped[str] = mapped_column(String)
     stated_or_inferred: Mapped[str] = mapped_column(String)  # "stated" | "inferred"
     # Current lifecycle state of the disruption. "reported" -> "confirmed"
     # (e.g. a community report confirmed by emergency personnel) -> "cleared".
