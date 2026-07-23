@@ -3,6 +3,7 @@ import { View, Text, TextInput, Pressable, FlatList, StyleSheet } from 'react-na
 import { WebView } from 'react-native-webview';
 import { theme } from '../../theme';
 import WarningBanner from '../../components/WarningBanner';
+import { useUserType } from '../../context/UserTypeContext';
 
 // Cork, Ireland — matches the region used throughout your prototype screenshots.
 const CORK_LAT = 51.8985;
@@ -45,7 +46,8 @@ const RECENT_SEARCHES = [
   { id: '4', title: 'Cork Airport', subtitle: 'Cork' },
 ];
 
-export default function MapScreen() {
+export default function MapScreen({ navigation }) {
+  const { userType } = useUserType();
   const [searchExpanded, setSearchExpanded] = useState(false);
   const [startLocation, setStartLocation] = useState('');
   const [destination, setDestination] = useState('');
@@ -57,13 +59,32 @@ export default function MapScreen() {
         originWhitelist={['*']}
         source={{ html: leafletHtml }}
         onShouldStartLoadWithRequest={(request) => {
-          // Allow the initial inline HTML to load, but block any attempt to
-          // navigate away from it — e.g. tapping the "Leaflet" attribution
-          // link in the map's corner, which otherwise hijacks the whole
-          // screen by loading leafletjs.com inside this WebView.
-          return request.url === 'about:blank' || request.url.startsWith('data:');
+          // Block only actual navigation to external websites (e.g. tapping
+          // the "Leaflet" attribution link, which would otherwise load
+          // leafletjs.com inside this WebView). This does NOT block the
+          // CDN <script>/<link> tags or map tile images, since those are
+          // resource loads, not top-level navigation.
+          return !request.url.startsWith('http://') && !request.url.startsWith('https://');
         }}
       />
+
+      {userType === 'driver' && (
+        <Pressable
+          style={styles.routeRadioButton}
+          onPress={() => navigation.navigate('RouteRadio')}
+        >
+          <Text style={styles.routeRadioIcon}>📻</Text>
+        </Pressable>
+      )}
+
+      {userType !== 'driver' && (
+        <Pressable
+          style={styles.reportButton}
+          onPress={() => navigation.navigate('ReportIncident')}
+        >
+          <Text style={styles.reportButtonText}>⚠️ Report</Text>
+        </Pressable>
+      )}
 
       <View style={styles.topBar}>
         {!searchExpanded ? (
@@ -149,6 +170,38 @@ export default function MapScreen() {
 }
 
 const styles = StyleSheet.create({
+  routeRadioButton: {
+    position: 'absolute',
+    top: 220,
+    right: theme.layout.spacing[5],
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: theme.colors.primary[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+    elevation: 4,
+  },
+  routeRadioIcon: {
+    fontSize: 22,
+  },
+  reportButton: {
+    position: 'absolute',
+    top: 220,
+    right: theme.layout.spacing[5],
+    backgroundColor: '#FFFFFF',
+    borderRadius: theme.layout.radius.full,
+    paddingHorizontal: theme.layout.spacing[4],
+    paddingVertical: theme.layout.spacing[2],
+    zIndex: 10,
+    elevation: 4,
+  },
+  reportButtonText: {
+    ...theme.typography.body.b3,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+    color: theme.colors.neutral[900],
+  },
   container: {
     flex: 1,
   },

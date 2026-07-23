@@ -5,6 +5,7 @@ import { Aboreto_400Regular } from '@expo-google-fonts/aboreto';
 import { View } from 'react-native';
 import RootNavigator from './src/navigation/RootNavigator';
 import { UserTypeProvider } from './src/context/UserTypeContext';
+import { AlertsProvider } from './src/context/AlertsContext';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -20,9 +21,11 @@ export default function App() {
 
   return (
     <UserTypeProvider>
-      <NavigationContainer>
-        <RootNavigator />
-      </NavigationContainer>
+      <AlertsProvider>
+        <NavigationContainer>
+          <RootNavigator />
+        </NavigationContainer>
+      </AlertsProvider>
     </UserTypeProvider>
   );
 }

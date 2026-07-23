@@ -2,12 +2,16 @@ import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { theme } from '../../theme';
 import SimpleHeader from '../../components/SimpleHeader';
 import SeverityBadge, { SEVERITY_CONFIG } from '../../components/SeverityBadge';
-import { ALERTS } from '../../data/alerts';
+import Button from '../../components/Button';
+import { useUserType } from '../../context/UserTypeContext';
+import { useAlerts } from '../../context/AlertsContext';
 
 export default function IncidentDetailScreen({ route, navigation }) {
   const { alertId } = route.params ?? {};
-  const alert = ALERTS.find((a) => a.id === alertId) ?? ALERTS[0];
+  const { alerts } = useAlerts();
+  const alert = alerts.find((a) => a.id === alertId) ?? alerts[0];
   const config = SEVERITY_CONFIG[alert.severity];
+  const { userType } = useUserType();
 
   return (
     <View style={styles.container}>
@@ -40,6 +44,24 @@ export default function IncidentDetailScreen({ route, navigation }) {
           <Text style={styles.aiLabel}>AI VERIFICATION</Text>
           <Text style={styles.aiText}>{alert.detail.aiVerification}</Text>
         </View>
+
+        {userType === 'emergency' && (
+          <View style={styles.actionRow}>
+            <View style={styles.actionButtonWrap}>
+              <Button
+                label="Verify Status"
+                variant="outline"
+                onPress={() => navigation.navigate('VerifyIncident', { alertId: alert.id })}
+              />
+            </View>
+            <View style={styles.actionButtonWrap}>
+              <Button
+                label="Update Status"
+                onPress={() => navigation.navigate('UpdateIncident', { alertId: alert.id })}
+              />
+            </View>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -155,5 +177,13 @@ const styles = StyleSheet.create({
     ...theme.typography.body.b3,
     color: theme.colors.secondaryWarm[700],
     lineHeight: 20,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    marginTop: theme.layout.spacing[5],
+  },
+  actionButtonWrap: {
+    flex: 1,
+    marginHorizontal: theme.layout.spacing[1],
   },
 });

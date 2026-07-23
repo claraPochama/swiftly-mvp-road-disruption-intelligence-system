@@ -2,11 +2,12 @@ import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { theme } from '../theme';
 import { useUserType } from '../context/UserTypeContext';
-import MapScreen from '../screens/shared/MapScreen';
+import MapStackNavigator from './MapStackNavigator';
 import AlertsStackNavigator from './AlertsStackNavigator';
 import WeekAheadScreen from '../screens/shared/WeekAheadScreen';
+import ChatsStackNavigator from './ChatsStackNavigator';
+import CommsStackNavigator from './CommsStackNavigator';
 import ProfileScreen from '../screens/shared/ProfileScreen';
-import PlaceholderScreen from '../screens/PlaceholderScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -46,20 +47,16 @@ export default function MainTabNavigator() {
         tabBarIcon: () => <Text style={{ fontSize: 18 }}>{TAB_ICONS[route.name]}</Text>,
       })}
     >
-      <Tab.Screen name="Map" component={MapScreen} />
+      <Tab.Screen name="Map" component={MapStackNavigator} />
       <Tab.Screen name="Alerts" component={AlertsStackNavigator} />
       <Tab.Screen name="Week Ahead" component={WeekAheadScreen} />
 
       {userType === 'passenger' && (
-        <Tab.Screen name="Chats">
-          {() => <PlaceholderScreen label="Chats" />}
-        </Tab.Screen>
+        <Tab.Screen name="Chats" component={ChatsStackNavigator} />
       )}
 
       {userType === 'emergency' && (
-        <Tab.Screen name="Comms">
-          {() => <PlaceholderScreen label="Comms" />}
-        </Tab.Screen>
+        <Tab.Screen name="Comms" component={CommsStackNavigator} />
       )}
 
       <Tab.Screen name="Profile" component={ProfileScreen} />

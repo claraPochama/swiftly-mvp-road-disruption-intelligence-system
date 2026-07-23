@@ -1,6 +1,8 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AlertsScreen from '../screens/shared/AlertsScreen';
 import IncidentDetailScreen from '../screens/shared/IncidentDetailScreen';
+import VerifyIncidentScreen from '../screens/emergency/VerifyIncidentScreen';
+import UpdateIncidentScreen from '../screens/emergency/UpdateIncidentScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -13,6 +15,10 @@ export default function AlertsStackNavigator() {
       <Stack.Screen name="AlertsList" component={AlertsScreen} />
 
       <Stack.Screen name="IncidentDetail" component={IncidentDetailScreen} />
+
+      <Stack.Screen name="VerifyIncident" component={VerifyIncidentScreen} />
+
+      <Stack.Screen name="UpdateIncident" component={UpdateIncidentScreen} />
     </Stack.Navigator>
   );
 }

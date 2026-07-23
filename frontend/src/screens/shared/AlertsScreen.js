@@ -3,18 +3,19 @@ import { View, Text, TextInput, Pressable, FlatList, StyleSheet } from 'react-na
 import { theme } from '../../theme';
 import SimpleHeader from '../../components/SimpleHeader';
 import SeverityBadge, { SEVERITY_CONFIG } from '../../components/SeverityBadge';
-import { ALERTS } from '../../data/alerts';
+import { useAlerts } from '../../context/AlertsContext';
 
 export default function AlertsScreen({ navigation }) {
+  const { alerts } = useAlerts();
   const [searchText, setSearchText] = useState('');
 
   const filteredAlerts = searchText
-    ? ALERTS.filter(
+    ? alerts.filter(
         (alert) =>
           alert.area.toLowerCase().includes(searchText.toLowerCase()) ||
           alert.location.toLowerCase().includes(searchText.toLowerCase())
       )
-    : ALERTS;
+    : alerts;
 
   return (
     <View style={styles.container}>
