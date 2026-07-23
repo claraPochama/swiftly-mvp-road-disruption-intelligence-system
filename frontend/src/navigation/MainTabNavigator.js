@@ -5,8 +5,9 @@ import { useUserType } from '../context/UserTypeContext';
 import MapStackNavigator from './MapStackNavigator';
 import AlertsStackNavigator from './AlertsStackNavigator';
 import WeekAheadScreen from '../screens/shared/WeekAheadScreen';
+import ChatsStackNavigator from './ChatsStackNavigator';
+import CommsStackNavigator from './CommsStackNavigator';
 import ProfileScreen from '../screens/shared/ProfileScreen';
-import PlaceholderScreen from '../screens/PlaceholderScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -51,15 +52,11 @@ export default function MainTabNavigator() {
       <Tab.Screen name="Week Ahead" component={WeekAheadScreen} />
 
       {userType === 'passenger' && (
-        <Tab.Screen name="Chats">
-          {() => <PlaceholderScreen label="Chats" />}
-        </Tab.Screen>
+        <Tab.Screen name="Chats" component={ChatsStackNavigator} />
       )}
 
       {userType === 'emergency' && (
-        <Tab.Screen name="Comms">
-          {() => <PlaceholderScreen label="Comms" />}
-        </Tab.Screen>
+        <Tab.Screen name="Comms" component={CommsStackNavigator} />
       )}
 
       <Tab.Screen name="Profile" component={ProfileScreen} />
