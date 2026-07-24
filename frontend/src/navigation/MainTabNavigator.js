@@ -8,6 +8,10 @@ import WeekAheadScreen from '../screens/shared/WeekAheadScreen';
 import ChatsStackNavigator from './ChatsStackNavigator';
 import CommsStackNavigator from './CommsStackNavigator';
 import ProfileScreen from '../screens/shared/ProfileScreen';
+import MapTabIcon from '../components/icons/MapTabIcon';
+import AlertsTabIcon from '../components/icons/AlertsTabIcon';
+import WeekAheadTabIcon from '../components/icons/WeekAheadTabIcon';
+import ProfileTabIcon from '../components/icons/ProfileTabIcon';
 
 const Tab = createBottomTabNavigator();
 
@@ -16,12 +20,8 @@ const Tab = createBottomTabNavigator();
 //   - Passenger: 5 tabs — adds "Chats"
 //   - Emergency Personnel: 5 tabs — adds "Comms" instead of "Chats"
 const TAB_ICONS = {
-  Map: '📍',
-  Alerts: '⚠️',
-  'Week Ahead': '🗓️',
   Chats: '💬',
   Comms: '💬',
-  Profile: '👤',
 };
 
 export default function MainTabNavigator() {
@@ -44,7 +44,13 @@ export default function MainTabNavigator() {
           fontFamily: theme.typography.fontFamily.bodyMedium,
           fontSize: 11,
         },
-        tabBarIcon: () => <Text style={{ fontSize: 18 }}>{TAB_ICONS[route.name]}</Text>,
+        tabBarIcon: ({ color }) => {
+          if (route.name === 'Map') return <MapTabIcon size={26} />;
+          if (route.name === 'Alerts') return <AlertsTabIcon size={20} color={color} />;
+          if (route.name === 'Week Ahead') return <WeekAheadTabIcon size={20} color={color} />;
+          if (route.name === 'Profile') return <ProfileTabIcon size={20} color={color} />;
+          return <Text style={{ fontSize: 18 }}>{TAB_ICONS[route.name]}</Text>;
+        },
       })}
     >
       <Tab.Screen name="Map" component={MapStackNavigator} />
