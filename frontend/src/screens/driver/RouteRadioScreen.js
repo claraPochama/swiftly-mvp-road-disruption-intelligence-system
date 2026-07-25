@@ -3,14 +3,8 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import * as Speech from 'expo-speech';
 import { theme } from '../../theme';
 import SimpleHeader from '../../components/SimpleHeader';
-
-// Static placeholder content — once the backend's POST /routes/{id}/broadcast
-// endpoint is wired up, currentAlert would come from there instead of being
-// hardcoded here.
-const CURRENT_ALERT_TEXT =
-  'M50 Northbound, Junction 6. Road Traffic Collision. Two lanes blocked. ' +
-  'Emergency services on scene. Drivers are advised to use the N3 as an ' +
-  'alternative. Expect delays of 45 to 60 minutes.';
+import { api } from '../../api/client';
+import { useRoute } from '../../context/RouteContext';
 
 // expo-speech doesn't reliably report real-time playback position on Android
 // (onBoundary is mostly iOS-only), so instead of guessing a duration upfront,
@@ -19,10 +13,10 @@ const CURRENT_ALERT_TEXT =
 // Until the first playthrough finishes, we show a rough word-count estimate
 // so the UI isn't blank.
 const WORDS_PER_MINUTE = 155;
-const roughEstimateSeconds = Math.max(
-  8,
-  Math.round((CURRENT_ALERT_TEXT.split(' ').length / WORDS_PER_MINUTE) * 60)
-);
+
+function estimateSeconds(text) {
+  return Math.max(8, Math.round(((text?.split(' ').length ?? 0) / WORDS_PER_MINUTE) * 60));
+}
 
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
@@ -31,13 +25,38 @@ function formatTime(seconds) {
 }
 
 export default function RouteRadioScreen({ navigation }) {
+  const { selectedRouteId } = useRoute();
+  const [scriptText, setScriptText] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [knownDuration, setKnownDuration] = useState(null); // set after first real playthrough
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
 
-  const displayedTotal = knownDuration ?? roughEstimateSeconds;
+  const displayedTotal = knownDuration ?? estimateSeconds(scriptText);
+
+  // Fetch the spoken bulletin for the current route from the backend.
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    api
+      .generateBroadcast(selectedRouteId)
+      .then((res) => {
+        if (!cancelled) setScriptText(res.script_text ?? '');
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedRouteId]);
 
   useEffect(() => {
     return () => {
@@ -67,11 +86,13 @@ export default function RouteRadioScreen({ navigation }) {
       return;
     }
 
+    if (!scriptText) return;
+
     setIsPlaying(true);
     setElapsed(0);
     startTimer();
 
-    Speech.speak(CURRENT_ALERT_TEXT, {
+    Speech.speak(scriptText, {
       rate: 0.95,
       onDone: () => {
         // Now we know the real duration — lock it in for next time.
@@ -103,7 +124,11 @@ export default function RouteRadioScreen({ navigation }) {
           <Text style={styles.pillText}>Route Radio</Text>
         </View>
 
-        <Pressable style={styles.playButton} onPress={handlePlayPause}>
+        <Pressable
+          style={[styles.playButton, (loading || !scriptText) && styles.playButtonDisabled]}
+          onPress={handlePlayPause}
+          disabled={loading || !scriptText}
+        >
           <Text style={styles.playIcon}>{isPlaying ? '⏸' : '▶'}</Text>
         </Pressable>
 
@@ -120,9 +145,15 @@ export default function RouteRadioScreen({ navigation }) {
         <View style={styles.alertCard}>
           <View style={styles.alertLabelRow}>
             <View style={styles.alertDot} />
-            <Text style={styles.alertLabel}>CURRENT ALERT</Text>
+            <Text style={styles.alertLabel}>CURRENT BROADCAST</Text>
           </View>
-          <Text style={styles.alertText}>{CURRENT_ALERT_TEXT}</Text>
+          <Text style={styles.alertText}>
+            {loading
+              ? 'Generating your route broadcast…'
+              : error
+                ? `Couldn't load the broadcast. ${error}`
+                : scriptText}
+          </Text>
         </View>
 
         <View style={styles.controlsRow}>
@@ -171,6 +202,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: theme.layout.spacing[6],
+  },
+  playButtonDisabled: {
+    opacity: 0.4,
   },
   playIcon: {
     fontSize: 32,

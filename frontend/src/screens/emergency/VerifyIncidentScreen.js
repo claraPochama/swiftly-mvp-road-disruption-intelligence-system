@@ -16,30 +16,45 @@ const VERIFICATION_METHODS = [
   'Others',
 ];
 
-// Mock — would come from the backend once wired up.
+// Static demo AI copy — the backend has no AI-assessment field (plan.md G is
+// deferred pending design), so this text is illustrative only.
 const AI_CONFIDENCE_PERCENT = 80;
 const AI_CONFIDENCE_EXPLANATION =
-  'Scheduled works on M1 J4 ended 06:00. Report timing and description align with official closure window. No contradicting reports found.';
-const WHAT_WAS_REPORTED =
-  'Overnight maintenance complete. All lanes open. Traffic flowing normally at the junction.';
+  'Report timing and description align with the expected pattern. No contradicting reports found.';
 
 export default function VerifyIncidentScreen({ route, navigation }) {
   const { alertId } = route.params ?? {};
   const { alerts, verifyAlert } = useAlerts();
   const alert = alerts.find((a) => a.id === alertId) ?? alerts[0];
-  const config = SEVERITY_CONFIG[alert.severity];
+  const config = SEVERITY_CONFIG[alert?.severity] ?? SEVERITY_CONFIG.medium;
 
   const [selectedMethod, setSelectedMethod] = useState('Visually confirmed the scene');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleReject = () => {
-    verifyAlert(alert.id, { verified: false, method: selectedMethod });
-    navigation.goBack();
+  if (!alert) {
+    return (
+      <View style={styles.container}>
+        <SimpleHeader title="Verify Incident" onBack={() => navigation.goBack()} />
+      </View>
+    );
+  }
+
+  const act = async (verified) => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await verifyAlert(alert.id, { verified, method: selectedMethod });
+      navigation.goBack();
+    } catch (e) {
+      setError(e.message);
+      setBusy(false);
+    }
   };
 
-  const handleConfirm = () => {
-    verifyAlert(alert.id, { verified: true, method: selectedMethod });
-    navigation.goBack();
-  };
+  const handleReject = () => act(false);
+  const handleConfirm = () => act(true);
 
   return (
     <View style={styles.container}>
@@ -56,13 +71,17 @@ export default function VerifyIncidentScreen({ route, navigation }) {
 
         <Text style={styles.sectionLabel}>WHAT WAS REPORTED</Text>
         <View style={styles.grayCard}>
-          <Text style={styles.grayCardText}>{WHAT_WAS_REPORTED}</Text>
+          <Text style={styles.grayCardText}>{alert.description}</Text>
         </View>
 
-        <Text style={styles.sectionLabel}>ANONYMOUS PASSENGER</Text>
+        <Text style={styles.sectionLabel}>SOURCE</Text>
         <View style={styles.grayCard}>
-          <Text style={styles.grayCardText}>Submitted via Swiftly • Passenger mode</Text>
-          <Text style={styles.reportCount}>1 Report</Text>
+          <Text style={styles.grayCardText}>
+            Submitted via Swiftly • {alert.sourceCategory === 'community_report'
+              ? 'Passenger mode'
+              : 'Official source'}
+          </Text>
+          <Text style={styles.reportCount}>Status: {alert.statusLabel}</Text>
         </View>
 
         <View style={styles.aiCard}>
@@ -97,12 +116,20 @@ export default function VerifyIncidentScreen({ route, navigation }) {
           })}
         </View>
 
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
         <View style={styles.actionRow}>
           <View style={styles.actionButtonWrap}>
-            <Button label="✕ Reject" variant="outline" color={theme.colors.red[600]} onPress={handleReject} />
+            <Button
+              label="✕ Reject"
+              variant="outline"
+              color={theme.colors.red[600]}
+              onPress={handleReject}
+              disabled={busy}
+            />
           </View>
           <View style={styles.actionButtonWrap}>
-            <Button label="Confirm" onPress={handleConfirm} />
+            <Button label={busy ? 'Saving…' : 'Confirm'} onPress={handleConfirm} disabled={busy} />
           </View>
         </View>
       </ScrollView>
@@ -241,5 +268,10 @@ const styles = StyleSheet.create({
   actionButtonWrap: {
     flex: 1,
     marginHorizontal: theme.layout.spacing[1],
+  },
+  errorText: {
+    ...theme.typography.body.b3,
+    color: theme.colors.red[600],
+    marginBottom: theme.layout.spacing[3],
   },
 });

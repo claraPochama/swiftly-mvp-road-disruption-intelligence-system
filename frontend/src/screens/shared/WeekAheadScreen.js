@@ -6,9 +6,9 @@ import SeverityBadge, { SEVERITY_CONFIG } from '../../components/SeverityBadge';
 import { WEEK_DAYS } from '../../data/weekAhead';
 
 const DOT_COLOR = {
-  disrupted: theme.colors.red[600],
-  caution: theme.colors.orange[500],
-  clear: theme.colors.green[400],
+  high: theme.colors.red[600],
+  medium: theme.colors.orange[500],
+  low: theme.colors.green[400],
 };
 
 export default function WeekAheadScreen() {
@@ -59,7 +59,11 @@ export default function WeekAheadScreen() {
           <View
             style={[
               styles.eventCard,
-              { borderColor: SEVERITY_CONFIG[selectedDay.event.severity].color },
+              {
+                borderColor: (
+                  SEVERITY_CONFIG[selectedDay.event.severity] ?? SEVERITY_CONFIG.medium
+                ).color,
+              },
             ]}
           >
             <View style={styles.eventTopRow}>

@@ -70,6 +70,16 @@ class DisruptionRecord(Base):
         cascade="all, delete-orphan",
     )
 
+    # Read-only convenience fields exposed on DisruptionOut so the frontend can
+    # show a human road label without a second lookup against the segment.
+    @property
+    def road_ref(self) -> str | None:
+        return self.segment.road_ref if self.segment else None
+
+    @property
+    def segment_label(self) -> str | None:
+        return self.segment.label if self.segment else None
+
 
 class DisruptionUpdate(Base):
     """One entry in a disruption's update timeline, e.g. "reported" at 14:35,

@@ -1,78 +1,97 @@
-import { createContext, useContext, useState } from 'react';
-import { ALERTS as INITIAL_ALERTS } from '../data/alerts';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { api } from '../api/client';
+import { toAlert } from '../api/mapping';
+import { useRoute } from './RouteContext';
 
 const AlertsContext = createContext(null);
 
-// Wrap the app in this once (see App.js) so alert data is real shared state
-// instead of a static imported array — any screen can read the current
-// alerts, and Verify/Update actions actually change what every other screen
-// sees, instead of just navigating back with nothing changed.
+// The single live-data hub. On mount / route change it fetches the selected
+// route's disruptions from the backend (replacing the old mock array), maps
+// them to the frontend alert shape, and exposes the write actions (report,
+// verify, update) which POST to the backend and then re-read so every screen
+// sees the change. useAlerts() keeps the same surface screens already used.
 export function AlertsProvider({ children }) {
-  const [alerts, setAlerts] = useState(INITIAL_ALERTS);
+  const { selectedRouteId } = useRoute();
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const load = useCallback(async () => {
+    if (!selectedRouteId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.getDisruptions(selectedRouteId);
+      setAlerts(data.map(toAlert));
+    } catch (e) {
+      setError(e.message);
+      setAlerts([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedRouteId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const getAlert = (id) => alerts.find((a) => a.id === id);
 
-  // Called from Verify Incident: Confirm marks it Verified, Reject marks it Rejected.
-  const verifyAlert = (id, { verified, method }) => {
-    setAlerts((prev) =>
-      prev.map((alert) =>
-        alert.id === id
-          ? {
-              ...alert,
-              detail: {
-                ...alert.detail,
-                status: verified ? 'Verified' : 'Rejected',
-                verificationMethod: method,
-              },
-            }
-          : alert
-      )
-    );
+  // Verify Incident: Confirm -> status "confirmed"; Reject has no backend status,
+  // so it is recorded as a "cleared" update whose note flags the rejection
+  // (plan.md decided approach for B).
+  const verifyAlert = async (id, { verified, method }) => {
+    const status = verified ? 'confirmed' : 'cleared';
+    const note = verified
+      ? `Verified by emergency personnel${method ? ` (${method})` : ''}.`
+      : `Rejected by emergency personnel${method ? ` (${method})` : ''}.`;
+    await api.addUpdate(id, { status, note });
+    await load();
   };
 
-  // Called from Update Incident: applies the chosen action (close/escalate/
-  // update) and appends any notes to the description.
-  const applyIncidentUpdate = (id, { action, notes }) => {
-    setAlerts((prev) =>
-      prev.map((alert) => {
-        if (alert.id !== id) return alert;
+  // Update Incident: close -> cleared, update -> confirmed. Escalate can't change
+  // severity via the contract (plan.md H, deferred), so it is recorded as a
+  // status note only, keeping the item confirmed.
+  const applyIncidentUpdate = async (id, { action, notes }) => {
+    const STATUS_BY_ACTION = { close: 'cleared', update: 'confirmed', escalate: 'confirmed' };
+    const PREFIX_BY_ACTION = { close: 'Closed', update: 'Updated', escalate: 'Escalated' };
+    const status = STATUS_BY_ACTION[action] ?? 'confirmed';
+    const prefix = PREFIX_BY_ACTION[action] ?? 'Updated';
+    const note = notes ? `${prefix}: ${notes}` : `${prefix} by emergency personnel.`;
+    await api.addUpdate(id, { status, note });
+    await load();
+  };
 
-        let severity = alert.severity;
-        let status = alert.detail.status;
-        let duration = alert.detail.duration;
-
-        if (action === 'close') {
-          severity = 'clear';
-          status = 'Verified';
-          duration = 'Resolved';
-        } else if (action === 'escalate') {
-          severity = alert.severity === 'caution' ? 'disrupted' : alert.severity;
-          status = 'Verified';
-        } else if (action === 'update') {
-          status = 'Verified';
-        }
-
-        const fullDescription = notes
-          ? `${alert.detail.fullDescription}\n\nUpdate: ${notes}`
-          : alert.detail.fullDescription;
-
-        return {
-          ...alert,
-          severity,
-          detail: { ...alert.detail, status, duration, fullDescription },
-        };
-      })
-    );
+  // Passenger report: POST a community report for the current route.
+  const submitReport = async ({ segmentId, disruptionType, severity, description }) => {
+    await api.submitReport(selectedRouteId, {
+      segment_id: segmentId,
+      disruption_type: disruptionType,
+      severity,
+      description,
+    });
+    await load();
   };
 
   return (
-    <AlertsContext.Provider value={{ alerts, getAlert, verifyAlert, applyIncidentUpdate }}>
+    <AlertsContext.Provider
+      value={{
+        alerts,
+        loading,
+        error,
+        reload: load,
+        getAlert,
+        verifyAlert,
+        applyIncidentUpdate,
+        submitReport,
+      }}
+    >
       {children}
     </AlertsContext.Provider>
   );
 }
 
-// Usage: const { alerts, getAlert, verifyAlert, applyIncidentUpdate } = useAlerts();
+// Usage: const { alerts, loading, getAlert, verifyAlert, applyIncidentUpdate, submitReport } = useAlerts();
 export function useAlerts() {
   const context = useContext(AlertsContext);
   if (!context) {

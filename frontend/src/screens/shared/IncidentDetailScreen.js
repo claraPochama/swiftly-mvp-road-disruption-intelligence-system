@@ -2,16 +2,28 @@ import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { theme } from '../../theme';
 import SimpleHeader from '../../components/SimpleHeader';
 import SeverityBadge, { SEVERITY_CONFIG } from '../../components/SeverityBadge';
+import SourceBadge from '../../components/SourceBadge';
 import Button from '../../components/Button';
 import { useUserType } from '../../context/UserTypeContext';
 import { useAlerts } from '../../context/AlertsContext';
+import { formatClock } from '../../api/mapping';
 
 export default function IncidentDetailScreen({ route, navigation }) {
   const { alertId } = route.params ?? {};
   const { alerts } = useAlerts();
   const alert = alerts.find((a) => a.id === alertId) ?? alerts[0];
-  const config = SEVERITY_CONFIG[alert.severity];
   const { userType } = useUserType();
+
+  if (!alert) {
+    return (
+      <View style={styles.container}>
+        <SimpleHeader title="Incident Detail" onBack={() => navigation.goBack()} />
+        <Text style={styles.emptyText}>This incident is no longer available.</Text>
+      </View>
+    );
+  }
+
+  const config = SEVERITY_CONFIG[alert.severity] ?? SEVERITY_CONFIG.medium;
 
   return (
     <View style={styles.container}>
@@ -28,21 +40,43 @@ export default function IncidentDetailScreen({ route, navigation }) {
 
         <View style={styles.infoCard}>
           <InfoRow icon="📍" label="LOCATION" value={alert.location} />
-          <InfoRow icon="🕐" label="REPORTED" value={alert.detail.reported} />
-          <InfoRow icon="⏳" label="DURATION" value={alert.detail.duration} />
+          <InfoRow icon="🕐" label="REPORTED" value={alert.reportedAt} />
+          <InfoRow icon="⏳" label="EXPIRES" value={formatClock(alert.expiry)} />
           <Text style={styles.statusLabel}>
-            STATUS: <Text style={styles.statusValue}>{alert.detail.status}</Text>
+            STATUS: <Text style={styles.statusValue}>{alert.statusLabel}</Text>
           </Text>
+        </View>
+
+        <Text style={styles.sectionLabel}>SOURCE</Text>
+        <View style={styles.sourceCard}>
+          <SourceBadge
+            sourceCategory={alert.sourceCategory}
+            statedOrInferred={alert.statedOrInferred}
+          />
         </View>
 
         <Text style={styles.sectionLabel}>DESCRIPTION</Text>
         <View style={styles.descriptionCard}>
-          <Text style={styles.descriptionText}>{alert.detail.fullDescription}</Text>
+          <Text style={styles.descriptionText}>{alert.description}</Text>
         </View>
 
-        <View style={styles.aiCard}>
-          <Text style={styles.aiLabel}>AI VERIFICATION</Text>
-          <Text style={styles.aiText}>{alert.detail.aiVerification}</Text>
+        <Text style={styles.sectionLabel}>UPDATE TIMELINE</Text>
+        <View style={styles.descriptionCard}>
+          {alert.updates.length === 0 ? (
+            <Text style={styles.descriptionText}>No updates yet.</Text>
+          ) : (
+            alert.updates.map((u) => (
+              <View key={u.id} style={styles.timelineRow}>
+                <View style={styles.timelineDot} />
+                <View style={styles.timelineBody}>
+                  <Text style={styles.timelineStatus}>
+                    {u.statusLabel} · {u.at}
+                  </Text>
+                  <Text style={styles.timelineNote}>{u.note}</Text>
+                </View>
+              </View>
+            ))
+          )}
         </View>
 
         {userType === 'emergency' && (
@@ -149,6 +183,12 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginBottom: theme.layout.spacing[2],
   },
+  sourceCard: {
+    backgroundColor: theme.colors.neutral[100],
+    borderRadius: theme.layout.radius[4],
+    padding: theme.layout.spacing[4],
+    marginBottom: theme.layout.spacing[5],
+  },
   descriptionCard: {
     backgroundColor: theme.colors.neutral[100],
     borderRadius: theme.layout.radius[4],
@@ -159,6 +199,39 @@ const styles = StyleSheet.create({
     ...theme.typography.body.b3,
     color: theme.colors.neutral[700],
     lineHeight: 20,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: theme.layout.spacing[3],
+  },
+  timelineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.colors.primary[500],
+    marginTop: 5,
+    marginRight: theme.layout.spacing[3],
+  },
+  timelineBody: {
+    flex: 1,
+  },
+  timelineStatus: {
+    ...theme.typography.body.b4,
+    fontFamily: theme.typography.fontFamily.headingBold,
+    color: theme.colors.neutral[900],
+  },
+  timelineNote: {
+    ...theme.typography.body.b3,
+    color: theme.colors.neutral[600],
+    lineHeight: 20,
+  },
+  emptyText: {
+    ...theme.typography.body.b3,
+    color: theme.colors.neutral[500],
+    textAlign: 'center',
+    marginTop: theme.layout.spacing[8],
+    paddingHorizontal: theme.layout.spacing[5],
   },
   aiCard: {
     backgroundColor: theme.colors.secondaryWarm[50],

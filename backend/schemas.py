@@ -41,12 +41,16 @@ class DisruptionReportIn(BaseModel):
 class DisruptionOut(BaseModel):
     id: str
     segment_id: str
+    road_ref: str | None = None  # e.g. "N22" — the segment's road reference
+    segment_label: str | None = None  # e.g. "Ballincollig to Macroom"
     disruption_type: str
     source_category: str
     stated_or_inferred: str
     status: str
     severity: str
     confidence: float
+    description: str
+    created_at: datetime
     expiry: datetime
     updates: list[DisruptionUpdateOut] = []
 
