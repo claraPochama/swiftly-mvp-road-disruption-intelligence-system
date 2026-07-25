@@ -57,6 +57,7 @@ the **contract the backend actually serves**. Wiring them together is not just
 - Also, frontend `clear` isn't a severity in the backend — the backend expresses
   "resolved" as a **status** (`cleared`), not a severity.
 - **Impact:** every severity badge and colour would mis-key against live data.
+- **Solution**: Adapting Frontend according to backend (using `low | medium | high` color)
 
 ### B. Status vocabulary differs — and "Rejected" has no backend home
 - **Frontend:** `Verified | Unverified | Rejected`.
@@ -64,16 +65,32 @@ the **contract the backend actually serves**. Wiring them together is not just
 - `reported`→Unverified and `confirmed`→Verified map fine. But the emergency
   **Reject** action (`AlertsContext.verifyAlert(..., {verified:false})`) has **no
   corresponding backend state** — the status enum can't represent a rejected report.
+- **Solution**: all use `reported | verified | cleared`
 
 ### C. The frontend has no concept of "routes" (biggest gap)
-- The backend is **entirely route-scoped**: `GET /routes`, then everything hangs
-  off `/routes/{route_id}/...`.
+- The backend is **entirely route-scoped**: `GET /routes`, then everything hangs off `/routes/{route_id}/...`.
 - The frontend never calls `GET /routes`, holds no `route_id`, and shows a **flat
   global alert list**. Its mock alerts even reference places off the two seeded
   routes (Dublin M50, N7 Naas) that the backend (`cork-killarney`,
   `cork-carrigaline`) doesn't cover.
-- **Impact:** none of the route-scoped reads can be called until a route is
-  selected and its id threaded through.
+- **Impact:** none of the route-scoped reads can be called until a route is selected and its id threaded through.
+- **Solution (prototype scope):** the backend only serves **two fixed routes**, so
+  the prototype does **not** build a dynamic route picker off `GET /routes`.
+  Instead, hardcode the two known ids — **`cork-killarney`** and
+  **`cork-carrigaline`** — as the only routes the frontend calls, and thread the
+  chosen one into every `/routes/{route_id}/...` request. A minimal two-item
+  toggle (or even a single default route) is enough; `GET /routes` stays optional,
+  only useful if we later want the display names (`origin_label` /
+  `destination_label`) instead of hardcoding those too. The off-route mock alerts
+  (Dublin M50, N7 Naas) are dropped since those roads aren't on either seeded route. So somehow in the frontend, at the searching bar, there's only 2 options **`cork-killarney`** and
+  **`cork-carrigaline`** to select in the dropping list. 
+- **Drawing the routes on the map:** the backend already stores each route's real
+  geometry as **GeoJSON**, so the frontend doesn't need a hardcoded/mock map. Once
+  a route id is chosen, call `GET /routes/{route_id}/geometry` (the ordered segment
+  `LineString`s) to draw the route, or `GET /routes/{route_id}/overlay` (the same
+  geometry **plus** a per-segment disruption summary — `worst_severity`,
+  `has_institutional` / `has_community`) to draw it **and** colour each stretch by
+  condition in a single call.
 
 ### D. Reports send free-text location, backend needs a `segment_id`
 - [ReportIncidentScreen](frontend/src/screens/passenger/ReportIncidentScreen.js)
@@ -83,6 +100,16 @@ the **contract the backend actually serves**. Wiring them together is not just
   route's segments (else `422`). The frontend has no segment picker and never
   fetches `GET /routes/{id}/geometry` to get the segment list.
 - The report's severity is also in the wrong vocabulary (see A).
+- **Solution (prototype scope):** don't do real GPS or free-text location. Show a
+  fixed demo **"current" spot** as a label (e.g. a point on Cork's College Road)
+  and submit a **hardcoded valid `segment_id`** from the selected route — e.g. the
+  route's first segment (`n22-seg-1` for `cork-killarney`, `r613-seg-1` for
+  `cork-carrigaline`) — so the report always resolves to a real segment and never
+  `422`s. No location resolution and no segment picker are built for the demo.
+  *(Optional, if we want the user to choose which stretch: reuse the segment list
+  from `GET /routes/{id}/geometry` — see part C — as a small dropdown, but a single
+  hardcoded demo segment is enough for the prototype.)* Severity is still mapped to
+  the backend vocabulary per A.
 
 ### E. The `updates[]` timeline isn't modelled
 - The contract says every `DisruptionOut` carries an ordered `updates[]` timeline
@@ -110,18 +137,19 @@ the **contract the backend actually serves**. Wiring them together is not just
 - **Impact:** this UI implies backend intelligence that doesn't exist. It must
   either be downgraded to display the numeric `confidence`, or treated as static
   demo text, or the backend scope must grow (a bigger decision).
+- **Solution**: hardcode. 
 
 ### H. "Escalate" (raise severity) has no backend path
 - The emergency [UpdateIncidentScreen](frontend/src/screens/emergency/UpdateIncidentScreen.js)
   offers close / escalate / update. `POST /disruptions/{id}/updates` only changes
   **status** (+ note) — it can't change **severity**. So `close`→`cleared` and
-  `update`→`confirmed` map fine, but **escalate has nowhere to go**.
+  `update`→`confirmed` map fine, but **escalate has nowhere to go**. 
 
 ### I. The pending-review queue endpoint is unused
 - Backend offers `GET /disruptions/pending` (the emergency review queue). The
   frontend reaches Verify from the general alerts list instead. Not a conflict —
   just an available endpoint the flow doesn't use yet.
-
+- **Solution**: just add something in frontend. 
 ---
 
 ## Recommended fixes (each tagged by where the change lands)
@@ -133,9 +161,10 @@ the **contract the backend actually serves**. Wiring them together is not just
 **Phase 1 — make live data possible (structural)**
 1. `[Frontend]` Add a small **API client** module (`src/api/client.js`) that reads
    `Constants.expoConfig.extra.apiBaseUrl` and wraps the endpoints.
-2. `[Frontend]` Add **route selection**: call `GET /routes`, store the chosen
-   `route_id` (a new context, or extend `UserTypeContext`), thread it into the
-   route-scoped calls. *(Fixes C.)*
+2. `[Frontend]` Add **fixed route selection**: hardcode the two known ids
+   (`cork-killarney`, `cork-carrigaline`), store the chosen one (a new context, or
+   extend `UserTypeContext`), and thread it into the route-scoped calls. No
+   dynamic `GET /routes` picker for the prototype. *(Fixes C.)*
 3. `[Frontend]` Turn `AlertsContext` into the live-data hub: on mount / route
    change, fetch `GET /routes/{id}/disruptions` instead of importing the mock
    array. Keep the same `useAlerts()` shape so screens don't change. *(Fixes the
@@ -144,21 +173,21 @@ the **contract the backend actually serves**. Wiring them together is not just
 **Phase 2 — reconcile vocabularies & fields (translation layer)**
 4. `[Frontend]` Add a **mapping layer** in the API client that converts backend →
    frontend display on read and frontend → backend on write:
-   - severity: `high→disrupted`, `medium→caution`, `low→caution` (or a new
-     "minor"); derive display **"clear" from `status==cleared`**, not from
-     severity. *(Fixes A.)*
-   - status: `reported→Unverified`, `confirmed→Verified`, `cleared→Resolved`.
+   - severity: `high`, `medium`, `low` *(Fixes A.)*
+   - status: `reported`, `verified`, `cleared`.
      *(Fixes B, read side.)*
 5. `[Frontend]` Model `updates[]` on the alert object and render it as a timeline
    in `IncidentDetail`; make `applyIncidentUpdate` post to
    `POST /disruptions/{id}/updates` and append a real timeline entry. *(Fixes E.)*
-6. `[Frontend]` Rework the report screen: fetch `GET /routes/{id}/geometry`,
-   let the user pick a **segment** (replacing the free-text location), and POST the
-   correct body (`segment_id`, `disruption_type`, mapped `severity`, `description`).
+6. `[Frontend]` Rework the report screen: replace the free-text location with a
+   fixed demo "current" spot (label only) and POST a **hardcoded valid `segment_id`**
+   from the selected route, so the body is correct (`segment_id`,
+   `disruption_type`, mapped `severity`, `description`) and never `422`s. *(A real
+   segment picker off `GET /routes/{id}/geometry` is an optional later upgrade.)*
    *(Fixes D.)*
 
 **Phase 3 — thesis & polish**
-7. `[Frontend]` Surface `source_category` / `stated_or_inferred` as a source badge
+7. `[Frontend]` Surface `source_category`  and present `stated_or_inferred` as a source badge
    (institutional vs community) so the app shows the provenance thesis. *(Fixes F.)*
 8. `[Frontend]` Wire Route Radio to `POST /routes/{id}/broadcast`. *(Already easy.)*
 9. `[Frontend, optional]` Add an emergency Pending queue screen backed by
@@ -169,12 +198,10 @@ the **contract the backend actually serves**. Wiring them together is not just
   `status:"cleared"` + `note:"Rejected: <reason>"`. *(Later option, if the team
   agrees: add a `rejected` status to the backend enum.)*
 - **AI verification UI (G).** Bind the confidence bar to the existing numeric
-  `confidence`; treat the written AI explanation as static demo text (or remove
-  it). *(Later option: add an AI-assessment field to `DisruptionOut` — new backend
-  work, out of MVP scope.)*
-- **Escalate / change severity (H).** Drop escalate for MVP, or record it as a
+  `confidence`; treat the written AI explanation as static demo text. *(Later option: add an AI-assessment field to `DisruptionOut` — new backend work, out of MVP scope.)*(Change nothing before the confirmation from designers)
+- **Escalate / change severity (H).** Drop wscalate for MVP, or record it as a
   status note only via `POST /updates`. *(Later option: let the updates endpoint
-  accept a new `severity`.)*
+  accept a new `severity`.)* (Change nothing before the confirmation from designers)
 
 ---
 
@@ -184,11 +211,9 @@ the **contract the backend actually serves**. Wiring them together is not just
   place they appear. Confirm no screen imports the mock arrays directly once wired.
 - **End-to-end (needs backend running, see backend doc §12):**
   set `API_BASE_URL` to the machine's LAN IP, `expo start`, then check each flow:
-  route picker lists 2 routes → Alerts list populates from
+  the two fixed routes (`cork-killarney`, `cork-carrigaline`) are selectable →
+  Alerts list populates from
   `GET /routes/{id}/disruptions` → Incident detail shows the `updates[]` timeline →
-  passenger report posts a valid `segment_id` and returns `201` → emergency
-  confirm/close moves the item's status → Route Radio speaks the fetched
-  `script_text`.
+  passenger report posts a valid `segment_id` and returns `201` → emergency confirm/close moves the item's status → Route Radio speaks the fetched `script_text`. 
 - **Contract cross-check:** every value the UI renders should trace to a field in
-  [docs/api-contract.md](docs/api-contract.md); anything that doesn't (AI
-  explanation text, TII matching) is flagged as demo-only or a backend decision.
+  [docs/api-contract.md](docs/api-contract.md); anything that doesn't (AI explanation text, TII matching) is flagged as demo-only or a backend decision.
