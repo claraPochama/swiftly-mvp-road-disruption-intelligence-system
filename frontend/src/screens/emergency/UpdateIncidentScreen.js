@@ -12,22 +12,41 @@ const ACTIONS = [
   { key: 'update', title: 'Update Status', subtitle: 'Amend details only' },
 ];
 
-// Mock — would come from the backend once wired up.
+// Static demo copy — the backend has no AI-assessment field (plan.md G is
+// deferred pending design), so this text is illustrative only.
 const AI_WARNING_TEXT =
-  "Conditions improving based on 2 recent reports. Closing this event will remove the public Caution alert from driver's feed.";
+  "Closing this event will remove its alert from the driver feed once applied.";
 
 export default function UpdateIncidentScreen({ route, navigation }) {
   const { alertId } = route.params ?? {};
   const { alerts, applyIncidentUpdate } = useAlerts();
   const alert = alerts.find((a) => a.id === alertId) ?? alerts[0];
-  const config = SEVERITY_CONFIG[alert.severity];
+  const config = SEVERITY_CONFIG[alert?.severity] ?? SEVERITY_CONFIG.medium;
 
   const [selectedAction, setSelectedAction] = useState('close');
   const [notes, setNotes] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleApplyUpdates = () => {
-    applyIncidentUpdate(alert.id, { action: selectedAction, notes });
-    navigation.goBack();
+  if (!alert) {
+    return (
+      <View style={styles.container}>
+        <SimpleHeader title="Incident Detail" onBack={() => navigation.goBack()} />
+      </View>
+    );
+  }
+
+  const handleApplyUpdates = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await applyIncidentUpdate(alert.id, { action: selectedAction, notes });
+      navigation.goBack();
+    } catch (e) {
+      setError(e.message);
+      setBusy(false);
+    }
   };
 
   return (
@@ -80,11 +99,17 @@ export default function UpdateIncidentScreen({ route, navigation }) {
         />
 
         <View style={styles.aiCard}>
-          <Text style={styles.aiLabel}>AI VERIFICATION</Text>
+          <Text style={styles.aiLabel}>NOTE</Text>
           <Text style={styles.aiText}>{AI_WARNING_TEXT}</Text>
         </View>
 
-        <Button label="Apply Updates" onPress={handleApplyUpdates} />
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+        <Button
+          label={busy ? 'Applying…' : 'Apply Updates'}
+          onPress={handleApplyUpdates}
+          disabled={busy}
+        />
       </ScrollView>
     </View>
   );
@@ -214,5 +239,10 @@ const styles = StyleSheet.create({
     ...theme.typography.body.b3,
     color: theme.colors.secondaryWarm[700],
     lineHeight: 20,
+  },
+  errorText: {
+    ...theme.typography.body.b3,
+    color: theme.colors.red[600],
+    marginBottom: theme.layout.spacing[3],
   },
 });

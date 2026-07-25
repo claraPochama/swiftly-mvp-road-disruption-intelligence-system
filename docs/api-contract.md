@@ -25,12 +25,16 @@ Every disruption endpoint returns this shape (referred to below as
 {
   "id": "string",
   "segment_id": "string",
+  "road_ref": "string | null",
+  "segment_label": "string | null",
   "disruption_type": "string",
   "source_category": "met_eireann_warning | council_notice | community_report",
   "stated_or_inferred": "stated | inferred",
   "status": "reported | confirmed | cleared",
   "severity": "low | medium | high",
   "confidence": "number",
+  "description": "string",
+  "created_at": "ISO 8601 datetime",
   "expiry": "ISO 8601 datetime",
   "updates": [
     {
@@ -43,6 +47,9 @@ Every disruption endpoint returns this shape (referred to below as
 }
 ```
 
+`road_ref` / `segment_label` are the human road label for the disruption's
+segment (e.g. `"N22"` / `"Ballincollig to Macroom"`), so the UI can show a title
+and location without a second lookup; `description` is the full incident text.
 `updates` is the ordered timeline the alert screen renders (e.g. "reported" →
 "confirmed by emergency personnel"). `source_category` is one of two
 institutional sources (`met_eireann_warning`, `council_notice`) or

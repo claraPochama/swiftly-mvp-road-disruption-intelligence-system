@@ -1,12 +1,26 @@
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable, FlatList, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  FlatList,
+  ActivityIndicator,
+  RefreshControl,
+  StyleSheet,
+} from 'react-native';
 import { theme } from '../../theme';
 import SimpleHeader from '../../components/SimpleHeader';
 import SeverityBadge, { SEVERITY_CONFIG } from '../../components/SeverityBadge';
+import SourceBadge from '../../components/SourceBadge';
 import { useAlerts } from '../../context/AlertsContext';
+import { useRoute } from '../../context/RouteContext';
+import { useUserType } from '../../context/UserTypeContext';
 
 export default function AlertsScreen({ navigation }) {
-  const { alerts } = useAlerts();
+  const { alerts, loading, error, reload } = useAlerts();
+  const { selectedRoute } = useRoute();
+  const { userType } = useUserType();
   const [searchText, setSearchText] = useState('');
 
   const filteredAlerts = searchText
@@ -16,6 +30,12 @@ export default function AlertsScreen({ navigation }) {
           alert.location.toLowerCase().includes(searchText.toLowerCase())
       )
     : alerts;
+
+  const emptyText = error
+    ? `Couldn't load alerts.\n${error}`
+    : loading
+      ? 'Loading alerts…'
+      : `No disruptions on the ${selectedRoute?.label ?? 'selected'} route right now.`;
 
   return (
     <View style={styles.container}>
@@ -29,14 +49,31 @@ export default function AlertsScreen({ navigation }) {
           value={searchText}
           onChangeText={setSearchText}
         />
+        <Text style={styles.routeHint}>{selectedRoute?.label}</Text>
       </View>
+
+      {userType === 'emergency' && (
+        <Pressable
+          style={styles.pendingButton}
+          onPress={() => navigation.navigate('PendingQueue')}
+        >
+          <Text style={styles.pendingButtonText}>🔎 Review pending reports</Text>
+        </Pressable>
+      )}
 
       <FlatList
         data={filteredAlerts}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}
+        ListEmptyComponent={
+          <View style={styles.emptyWrap}>
+            {loading ? <ActivityIndicator color={theme.colors.primary[500]} /> : null}
+            <Text style={styles.emptyText}>{emptyText}</Text>
+          </View>
+        }
         renderItem={({ item }) => {
-          const config = SEVERITY_CONFIG[item.severity];
+          const config = SEVERITY_CONFIG[item.severity] ?? SEVERITY_CONFIG.medium;
           return (
             <View style={[styles.card, { backgroundColor: config.background }]}>
               <View style={styles.cardTopRow}>
@@ -45,7 +82,16 @@ export default function AlertsScreen({ navigation }) {
               </View>
 
               <Text style={styles.cardTitle}>{item.title}</Text>
-              <Text style={styles.cardDescription}>{item.description}</Text>
+              <Text style={styles.cardDescription} numberOfLines={2}>
+                {item.description}
+              </Text>
+
+              <View style={styles.sourceRow}>
+                <SourceBadge
+                  sourceCategory={item.sourceCategory}
+                  statedOrInferred={item.statedOrInferred}
+                />
+              </View>
 
               <View style={styles.cardBottomRow}>
                 <Text style={styles.location}>📍 {item.location}</Text>
@@ -74,6 +120,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.layout.spacing[5],
     marginTop: theme.layout.spacing[4],
     marginBottom: theme.layout.spacing[2],
+  },
+  routeHint: {
+    ...theme.typography.body.b4,
+    color: theme.colors.neutral[500],
+    marginTop: theme.layout.spacing[2],
+    marginLeft: theme.layout.spacing[1],
+  },
+  emptyWrap: {
+    alignItems: 'center',
+    paddingTop: theme.layout.spacing[8],
+    paddingHorizontal: theme.layout.spacing[5],
+  },
+  emptyText: {
+    ...theme.typography.body.b3,
+    color: theme.colors.neutral[500],
+    textAlign: 'center',
+    marginTop: theme.layout.spacing[3],
+  },
+  sourceRow: {
+    marginBottom: theme.layout.spacing[3],
+  },
+  pendingButton: {
+    marginHorizontal: theme.layout.spacing[5],
+    marginBottom: theme.layout.spacing[2],
+    backgroundColor: theme.colors.secondaryWarm[100],
+    borderRadius: theme.layout.radius[3],
+    paddingVertical: theme.layout.spacing[3],
+    alignItems: 'center',
+  },
+  pendingButtonText: {
+    ...theme.typography.body.b3,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+    color: theme.colors.secondaryWarm[800],
   },
   searchInput: {
     backgroundColor: theme.colors.neutral[100],

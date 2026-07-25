@@ -4,18 +4,20 @@ import { theme } from '../theme';
 // Usage: <Button label="Get Started" onPress={() => ...} />
 // Pass variant="outline" for the white/bordered version (used on Login screen).
 // Pass color to override the background, and labelColor to override the text color.
-export default function Button({ label, onPress, variant = 'filled', color, labelColor }) {
+export default function Button({ label, onPress, variant = 'filled', color, labelColor, disabled = false }) {
   const isOutline = variant === 'outline';
 
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       style={({ pressed }) => [
         styles.base,
         isOutline
           ? [styles.outline, color && { borderColor: color }]
           : [styles.filled, color && { backgroundColor: color }],
         pressed && styles.pressed,
+        disabled && styles.disabled,
       ]}
     >
       <Text
@@ -49,6 +51,9 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.85,
+  },
+  disabled: {
+    opacity: 0.4,
   },
   label: {
     color: '#FFFFFF',
