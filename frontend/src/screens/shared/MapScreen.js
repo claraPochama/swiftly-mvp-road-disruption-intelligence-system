@@ -4,6 +4,7 @@ import { WebView } from 'react-native-webview';
 import { theme } from '../../theme';
 import WarningBanner from '../../components/WarningBanner';
 import { useUserType } from '../../context/UserTypeContext';
+import RouteRadioIcon from '../../components/icons/RouteRadioIcon';
 
 // Cork, Ireland — matches the region used throughout your prototype screenshots.
 const CORK_LAT = 51.8985;
@@ -73,7 +74,7 @@ export default function MapScreen({ navigation }) {
           style={styles.routeRadioButton}
           onPress={() => navigation.navigate('RouteRadio')}
         >
-          <Text style={styles.routeRadioIcon}>📻</Text>
+          <RouteRadioIcon size={56} />
         </Pressable>
       )}
 
@@ -171,21 +172,12 @@ export default function MapScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   routeRadioButton: {
-    position: 'absolute',
-    top: 220,
-    right: theme.layout.spacing[5],
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: theme.colors.primary[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-    elevation: 4,
-  },
-  routeRadioIcon: {
-    fontSize: 22,
-  },
+  position: 'absolute',
+  top: 220,
+  right: theme.layout.spacing[5],
+  zIndex: 10,
+  elevation: 4,
+},
   reportButton: {
     position: 'absolute',
     top: 220,

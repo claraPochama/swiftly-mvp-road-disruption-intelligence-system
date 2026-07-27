@@ -3,12 +3,16 @@ import { View, Text, Pressable, Switch, ScrollView, StyleSheet } from 'react-nat
 import { theme } from '../../theme';
 import SimpleHeader from '../../components/SimpleHeader';
 import { useUserType } from '../../context/UserTypeContext';
+import CriticalAlertIcon from '../../components/icons/CriticalAlertIcon';
+import CautionAlertIcon from '../../components/icons/CautionAlertIcon';
+import ClearNotificationsIcon from '../../components/icons/ClearNotificationsIcon';
+import WeatherImpactsIcon from '../../components/icons/WeatherImpactsIcon';
 
 const NOTIFICATION_DEFAULTS = [
-  { key: 'critical', icon: '⚠️', title: 'Critical alerts', subtitle: 'Collisions, closures', value: true },
-  { key: 'caution', icon: '❗', title: 'Caution alerts', subtitle: 'Road works, flooding', value: true },
-  { key: 'clear', icon: '✅', title: 'Clear notifications', subtitle: 'Resolved incidents', value: false },
-  { key: 'weather', icon: '☁️', title: 'Weather impacts', subtitle: 'Forecasted disruptions', value: true },
+  { key: 'critical', title: 'Critical alerts', subtitle: 'Collisions, closures', value: true },
+  { key: 'caution', title: 'Caution alerts', subtitle: 'Road works, flooding', value: true },
+  { key: 'clear', title: 'Clear notifications', subtitle: 'Resolved incidents', value: false },
+  { key: 'weather', title: 'Weather impacts', subtitle: 'Forecasted disruptions', value: true },
 ];
 
 const PREFERENCES = [
@@ -66,7 +70,12 @@ export default function ProfileScreen() {
               key={item.key}
               style={[styles.row, index < NOTIFICATION_DEFAULTS.length - 1 && styles.rowDivider]}
             >
-              <Text style={styles.rowIcon}>{item.icon}</Text>
+              <View style={styles.rowIcon}>
+                {item.key === 'critical' && <CriticalAlertIcon size={28} />}
+                {item.key === 'caution' && <CautionAlertIcon size={28} />}
+                {item.key === 'clear' && <ClearNotificationsIcon size={28} />}
+                {item.key === 'weather' && <WeatherImpactsIcon size={28} />}
+              </View>
               <View style={styles.rowText}>
                 <Text style={styles.rowTitle}>{item.title}</Text>
                 <Text style={styles.rowSubtitle}>{item.subtitle}</Text>
@@ -207,8 +216,9 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.neutral[200],
   },
   rowIcon: {
-    fontSize: 18,
-    marginRight: theme.layout.spacing[3],
+  width: 20,
+  marginRight: theme.layout.spacing[3],
+  alignItems: 'center',
   },
   rowText: {
     flex: 1,
