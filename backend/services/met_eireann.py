@@ -41,6 +41,17 @@ COUNTY_SEGMENT: dict[tuple[str, str], str] = {
 
 _SEVERITY_RANK = {"low": 0, "medium": 1, "high": 2}
 
+# Met Eireann also publishes hazards that have nothing to do with driving --
+# agricultural (potato blight) and marine (small craft, gale) notices. Some of
+# them arrive with status "Warning" and a colour level, so the status check
+# below does not catch them; match on the headline/capId instead.
+_NON_ROAD_HAZARDS = ("blight", "small craft", "smallcraft", "marine", "agricultural")
+
+
+def _is_road_relevant(warning: dict) -> bool:
+    text = f"{warning.get('headline', '')} {warning.get('capId', '')}".lower()
+    return not any(hazard in text for hazard in _NON_ROAD_HAZARDS)
+
 
 def _level_to_severity(level: str) -> str:
     return {"yellow": "medium", "orange": "high", "red": "high"}.get(level.lower(), "medium")
@@ -108,6 +119,8 @@ def refresh_warnings(db) -> dict:
                 # anything else (e.g. Small Craft marine notices).
                 status = (w.get("status") or "").lower()
                 if status not in ("warning", "advisory"):
+                    continue
+                if not _is_road_relevant(w):
                     continue
                 cap_id = w.get("capId")
                 if cap_id in seen_cap_ids:
