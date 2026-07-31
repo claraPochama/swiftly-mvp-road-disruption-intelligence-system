@@ -12,6 +12,7 @@ import MapTabIcon from '../components/icons/MapTabIcon';
 import AlertsTabIcon from '../components/icons/AlertsTabIcon';
 import WeekAheadTabIcon from '../components/icons/WeekAheadTabIcon';
 import ProfileTabIcon from '../components/icons/ProfileTabIcon';
+import ChatsCommsTabIcon from '../components/icons/ChatsCommsTabIcon.js';
 
 const Tab = createBottomTabNavigator();
 
@@ -19,10 +20,7 @@ const Tab = createBottomTabNavigator();
 //   - Driver: 4 tabs — no Chat/Report Incident (kept hands-free)
 //   - Passenger: 5 tabs — adds "Chats"
 //   - Emergency Personnel: 5 tabs — adds "Comms" instead of "Chats"
-const TAB_ICONS = {
-  Chats: '💬',
-  Comms: '💬',
-};
+const TAB_ICONS = {};
 
 export default function MainTabNavigator() {
   const { userType } = useUserType();
@@ -49,7 +47,8 @@ export default function MainTabNavigator() {
           if (route.name === 'Alerts') return <AlertsTabIcon size={20} color={color} />;
           if (route.name === 'Week Ahead') return <WeekAheadTabIcon size={20} color={color} />;
           if (route.name === 'Profile') return <ProfileTabIcon size={20} color={color} />;
-          return <Text style={{ fontSize: 18 }}>{TAB_ICONS[route.name]}</Text>;
+          if (route.name === 'Chats' || route.name === 'Comms') return <ChatsCommsTabIcon size={20} color={color} />;
+          return null;
         },
       })}
     >

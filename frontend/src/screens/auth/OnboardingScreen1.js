@@ -1,5 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { theme } from '../../theme';
 import Button from '../../components/Button';
 import PaginationDots from '../../components/PaginationDots';
@@ -8,19 +7,13 @@ export default function OnboardingScreen1({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.illustrationWrap}>
-        {/* Placeholder illustration — swap for the exact exported artwork
-            once available, same as we did for the logo. */}
-        <Svg width={160} height={160} viewBox="0 0 160 160">
-          <Circle cx="80" cy="80" r="70" fill={theme.colors.primary[50]} />
-          <Path
-            d="M45 95 Q80 60 115 95"
-            stroke={theme.colors.primary[400]}
-            strokeWidth={6}
-            strokeLinecap="round"
-            fill="none"
-          />
-          <Circle cx="80" cy="70" r="14" fill={theme.colors.primary[500]} />
-        </Svg>
+        <Image
+          source={{
+            uri: 'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMnI2a3EyaWdyajFna2c2a2U2OXpzenpmeGh2MDh5dzEwNzU5NzU4YyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/EohabTjOHiKNzjkkrj/giphy.gif',
+          }}
+          style={styles.illustrationImage}
+          resizeMode="contain"
+        />
       </View>
 
       <Text style={styles.heading}>Know before you go</Text>
@@ -50,6 +43,10 @@ const styles = StyleSheet.create({
   },
   illustrationWrap: {
     marginBottom: theme.layout.spacing[8],
+  },
+  illustrationImage: {
+    width: 160,
+    height: 160,
   },
   heading: {
     ...theme.typography.heading.h3,
