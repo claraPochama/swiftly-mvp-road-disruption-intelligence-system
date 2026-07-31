@@ -5,6 +5,8 @@ import { theme } from '../../theme';
 import WarningBanner from '../../components/WarningBanner';
 import { useUserType } from '../../context/UserTypeContext';
 import RouteRadioIcon from '../../components/icons/RouteRadioIcon';
+import ReportIncidentIcon from '../../components/icons/ReportIncidentIcon';
+import SearchIcon from '../../components/icons/SearchIcon';
 
 // Cork, Ireland — matches the region used throughout your prototype screenshots.
 const CORK_LAT = 51.8985;
@@ -69,21 +71,19 @@ export default function MapScreen({ navigation }) {
         }}
       />
 
-      {userType === 'driver' && (
-        <Pressable
-          style={styles.routeRadioButton}
-          onPress={() => navigation.navigate('RouteRadio')}
-        >
-          <RouteRadioIcon size={56} />
-        </Pressable>
-      )}
+      <Pressable
+        style={styles.routeRadioButton}
+        onPress={() => navigation.navigate('RouteRadio')}
+      >
+        <RouteRadioIcon size={56} />
+      </Pressable>
 
       {userType !== 'driver' && (
         <Pressable
           style={styles.reportButton}
           onPress={() => navigation.navigate('ReportIncident')}
         >
-          <Text style={styles.reportButtonText}>⚠️ Report</Text>
+          <ReportIncidentIcon size={56} />
         </Pressable>
       )}
 
@@ -93,7 +93,7 @@ export default function MapScreen({ navigation }) {
             style={styles.searchPill}
             onPress={() => setSearchExpanded(true)}
           >
-            <Text style={styles.searchIcon}>🔍</Text>
+            <SearchIcon size={18} />
             <Text style={styles.searchPlaceholder}>Search</Text>
           </Pressable>
         ) : (
@@ -172,27 +172,18 @@ export default function MapScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   routeRadioButton: {
-  position: 'absolute',
-  top: 220,
-  right: theme.layout.spacing[5],
-  zIndex: 10,
-  elevation: 4,
-},
-  reportButton: {
     position: 'absolute',
     top: 220,
     right: theme.layout.spacing[5],
-    backgroundColor: '#FFFFFF',
-    borderRadius: theme.layout.radius.full,
-    paddingHorizontal: theme.layout.spacing[4],
-    paddingVertical: theme.layout.spacing[2],
     zIndex: 10,
     elevation: 4,
   },
-  reportButtonText: {
-    ...theme.typography.body.b3,
-    fontFamily: theme.typography.fontFamily.bodyMedium,
-    color: theme.colors.neutral[900],
+  reportButton: {
+    position: 'absolute',
+    top: 288,
+    right: theme.layout.spacing[5],
+    zIndex: 10,
+    elevation: 4,
   },
   container: {
     flex: 1,
@@ -217,12 +208,10 @@ const styles = StyleSheet.create({
     paddingVertical: theme.layout.spacing[3],
     paddingHorizontal: theme.layout.spacing[4],
   },
-  searchIcon: {
-    marginRight: theme.layout.spacing[2],
-  },
   searchPlaceholder: {
     ...theme.typography.body.b2,
     color: theme.colors.neutral[400],
+    marginLeft: theme.layout.spacing[2],
   },
   routePanel: {
     backgroundColor: '#FFFFFF',

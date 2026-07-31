@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import * as Speech from 'expo-speech';
 import { theme } from '../../theme';
 import SimpleHeader from '../../components/SimpleHeader';
@@ -96,9 +96,9 @@ export default function RouteRadioScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <SimpleHeader title="Route Radio" onBack={() => navigation.goBack()} />
+      <SimpleHeader title="Route Radio" onBack={() => navigation.goBack()} backgroundColor="#DFECE0" titleColor="#498058" arrowColor="#498058" />
 
-      <View style={styles.body}>
+      <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.pill}>
           <Text style={styles.pillText}>Route Radio</Text>
         </View>
@@ -135,7 +135,7 @@ export default function RouteRadioScreen({ navigation }) {
             <Text style={styles.controlLabel}>Next</Text>
           </View>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -149,6 +149,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: theme.layout.spacing[6],
     paddingTop: theme.layout.spacing[6],
+    paddingBottom: theme.layout.spacing[8],
   },
   pill: {
     borderWidth: theme.layout.stroke[0],

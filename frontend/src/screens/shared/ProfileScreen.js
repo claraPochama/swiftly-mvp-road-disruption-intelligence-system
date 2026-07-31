@@ -27,7 +27,7 @@ const ABOUT = [
   { key: 'sync', label: 'Last sync', value: '12:46 today' },
 ];
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }) {
   const { userType } = useUserType();
   const activeMode = userType.charAt(0).toUpperCase() + userType.slice(1);
 
@@ -41,7 +41,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <SimpleHeader title="Profile" />
+      <SimpleHeader title="Profile" backgroundColor="#DFECE0" titleColor="#498058" arrowColor="#498058" />
 
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.userCard}>
@@ -57,9 +57,12 @@ export default function ProfileScreen() {
 
           <View style={styles.activeModeRow}>
             <Text style={styles.activeModeLabel}>Active Mode</Text>
-            <View style={styles.activeModePill}>
+            <Pressable
+              style={styles.activeModePill}
+              onPress={() => navigation.navigate('UserType')}
+            >
               <Text style={styles.activeModeValue}>{activeMode}</Text>
-            </View>
+            </Pressable>
           </View>
         </View>
 
@@ -216,9 +219,7 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.neutral[200],
   },
   rowIcon: {
-  width: 20,
-  marginRight: theme.layout.spacing[3],
-  alignItems: 'center',
+    marginRight: theme.layout.spacing[3],
   },
   rowText: {
     flex: 1,

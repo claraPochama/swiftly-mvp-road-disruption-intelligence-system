@@ -17,7 +17,7 @@ export default function WeekAheadScreen() {
 
   return (
     <View style={styles.container}>
-      <SimpleHeader title="Week Ahead" />
+      <SimpleHeader title="Week Ahead" backgroundColor="#DFECE0" titleColor="#498058" arrowColor="#498058" />
 
       <View style={styles.body}>
         <Text style={styles.monthLabel}>{selectedDay.monthLabel}</Text>

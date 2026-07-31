@@ -23,7 +23,7 @@ export default {
       favicon: './assets/favicon.png',
     },
     extra: {
-      apiBaseUrl: process.env.API_BASE_URL,
+      apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || process.env.API_BASE_URL,
       sentryDsn: process.env.SENTRY_DSN,
       appEnv: process.env.APP_ENV,
     },
