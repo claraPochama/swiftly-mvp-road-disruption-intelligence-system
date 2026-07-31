@@ -58,7 +58,7 @@ export default function ReportIncidentScreen({ navigation }) {
   if (submitted) {
     return (
       <View style={styles.container}>
-        <SimpleHeader title="Report Incident" onBack={() => navigation.goBack()} />
+        <SimpleHeader title="Report Incident" onBack={() => navigation.goBack()} backgroundColor="#DFECE0" titleColor="#498058" arrowColor="#498058" />
         <View style={styles.confirmationWrap}>
           <Text style={styles.confirmationCheck}>✓</Text>
           <Text style={styles.confirmationText}>Report Submitted!</Text>
@@ -72,7 +72,7 @@ export default function ReportIncidentScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <SimpleHeader title="Report Incident" onBack={() => navigation.goBack()} />
+      <SimpleHeader title="Report Incident" onBack={() => navigation.goBack()} backgroundColor="#DFECE0" titleColor="#498058" arrowColor="#498058" />
 
       <ScrollView contentContainerStyle={styles.body}>
         <Text style={styles.intro}>

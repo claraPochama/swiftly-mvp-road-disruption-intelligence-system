@@ -22,7 +22,7 @@ export default function CommsConversationScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <SimpleHeader title={contactName ?? 'Comms'} onBack={() => navigation.goBack()} />
+      <SimpleHeader title={contactName ?? 'Comms'} onBack={() => navigation.goBack()} backgroundColor="#DFECE0" titleColor="#498058" arrowColor="#498058" />
 
       {thread?.incident && (
         <View style={styles.incidentBanner}>
@@ -30,9 +30,6 @@ export default function CommsConversationScreen({ route, navigation }) {
             <Text style={styles.incidentDot}>● </Text>
             {thread.incident.id} • {thread.incident.location} • Units {thread.incident.units} assigned
           </Text>
-          <View style={styles.liveBadge}>
-            <Text style={styles.liveBadgeText}>LIVE</Text>
-          </View>
         </View>
       )}
       {thread?.incident && (
@@ -77,14 +74,6 @@ export default function CommsConversationScreen({ route, navigation }) {
             </View>
           );
         }}
-        ListFooterComponent={
-          thread?.aiSuggestion ? (
-            <View style={styles.aiCard}>
-              <Text style={styles.aiLabel}>AI SUGGESTION</Text>
-              <Text style={styles.aiText}>{thread.aiSuggestion}</Text>
-            </View>
-          ) : null
-        }
       />
 
       <View style={styles.inputRow}>
@@ -124,19 +113,6 @@ const styles = StyleSheet.create({
   },
   incidentDot: {
     color: theme.colors.red[400] ?? '#F8A9AD',
-  },
-  liveBadge: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: theme.layout.radius.full,
-    paddingHorizontal: theme.layout.spacing[2],
-    paddingVertical: 2,
-    marginLeft: theme.layout.spacing[2],
-  },
-  liveBadgeText: {
-    ...theme.typography.body.b4,
-    fontFamily: theme.typography.fontFamily.headingBold,
-    color: theme.colors.red[700],
-    fontSize: 10,
   },
   timestamp: {
     ...theme.typography.body.b4,
@@ -198,25 +174,6 @@ const styles = StyleSheet.create({
   },
   bubbleTextOnDark: {
     color: '#FFFFFF',
-  },
-  aiCard: {
-    backgroundColor: theme.colors.secondaryWarm[50],
-    borderWidth: theme.layout.stroke[0],
-    borderColor: theme.colors.secondaryWarm[300],
-    borderRadius: theme.layout.radius[4],
-    padding: theme.layout.spacing[4],
-    marginTop: theme.layout.spacing[2],
-  },
-  aiLabel: {
-    ...theme.typography.body.b4,
-    fontFamily: theme.typography.fontFamily.headingBold,
-    color: theme.colors.secondaryWarm[700],
-    marginBottom: theme.layout.spacing[1],
-  },
-  aiText: {
-    ...theme.typography.body.b3,
-    color: theme.colors.secondaryWarm[700],
-    lineHeight: 20,
   },
   inputRow: {
     flexDirection: 'row',

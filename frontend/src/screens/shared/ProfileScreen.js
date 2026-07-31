@@ -3,12 +3,16 @@ import { View, Text, Pressable, Switch, ScrollView, StyleSheet } from 'react-nat
 import { theme } from '../../theme';
 import SimpleHeader from '../../components/SimpleHeader';
 import { useUserType } from '../../context/UserTypeContext';
+import CriticalAlertIcon from '../../components/icons/CriticalAlertIcon';
+import CautionAlertIcon from '../../components/icons/CautionAlertIcon';
+import ClearNotificationsIcon from '../../components/icons/ClearNotificationsIcon';
+import WeatherImpactsIcon from '../../components/icons/WeatherImpactsIcon';
 
 const NOTIFICATION_DEFAULTS = [
-  { key: 'critical', icon: '⚠️', title: 'Critical alerts', subtitle: 'Collisions, closures', value: true },
-  { key: 'caution', icon: '❗', title: 'Caution alerts', subtitle: 'Road works, flooding', value: true },
-  { key: 'clear', icon: '✅', title: 'Clear notifications', subtitle: 'Resolved incidents', value: false },
-  { key: 'weather', icon: '☁️', title: 'Weather impacts', subtitle: 'Forecasted disruptions', value: true },
+  { key: 'critical', title: 'Critical alerts', subtitle: 'Collisions, closures', value: true },
+  { key: 'caution', title: 'Caution alerts', subtitle: 'Road works, flooding', value: true },
+  { key: 'clear', title: 'Clear notifications', subtitle: 'Resolved incidents', value: false },
+  { key: 'weather', title: 'Weather impacts', subtitle: 'Forecasted disruptions', value: true },
 ];
 
 const PREFERENCES = [
@@ -23,7 +27,7 @@ const ABOUT = [
   { key: 'sync', label: 'Last sync', value: '12:46 today' },
 ];
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }) {
   const { userType } = useUserType();
   const activeMode = userType.charAt(0).toUpperCase() + userType.slice(1);
 
@@ -37,7 +41,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <SimpleHeader title="Profile" />
+      <SimpleHeader title="Profile" backgroundColor="#DFECE0" titleColor="#498058" arrowColor="#498058" />
 
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.userCard}>
@@ -53,9 +57,12 @@ export default function ProfileScreen() {
 
           <View style={styles.activeModeRow}>
             <Text style={styles.activeModeLabel}>Active Mode</Text>
-            <View style={styles.activeModePill}>
+            <Pressable
+              style={styles.activeModePill}
+              onPress={() => navigation.navigate('UserType')}
+            >
               <Text style={styles.activeModeValue}>{activeMode}</Text>
-            </View>
+            </Pressable>
           </View>
         </View>
 
@@ -66,7 +73,12 @@ export default function ProfileScreen() {
               key={item.key}
               style={[styles.row, index < NOTIFICATION_DEFAULTS.length - 1 && styles.rowDivider]}
             >
-              <Text style={styles.rowIcon}>{item.icon}</Text>
+              <View style={styles.rowIcon}>
+                {item.key === 'critical' && <CriticalAlertIcon size={28} />}
+                {item.key === 'caution' && <CautionAlertIcon size={28} />}
+                {item.key === 'clear' && <ClearNotificationsIcon size={28} />}
+                {item.key === 'weather' && <WeatherImpactsIcon size={28} />}
+              </View>
               <View style={styles.rowText}>
                 <Text style={styles.rowTitle}>{item.title}</Text>
                 <Text style={styles.rowSubtitle}>{item.subtitle}</Text>
@@ -207,7 +219,6 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.neutral[200],
   },
   rowIcon: {
-    fontSize: 18,
     marginRight: theme.layout.spacing[3],
   },
   rowText: {

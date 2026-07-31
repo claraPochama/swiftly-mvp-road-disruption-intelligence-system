@@ -118,21 +118,19 @@ export default function MapScreen({ navigation }) {
         }}
       />
 
-      {userType === 'driver' && (
-        <Pressable
-          style={styles.routeRadioButton}
-          onPress={() => navigation.navigate('RouteRadio')}
-        >
-          <Text style={styles.routeRadioIcon}>📻</Text>
-        </Pressable>
-      )}
+      <Pressable
+        style={styles.routeRadioButton}
+        onPress={() => navigation.navigate('RouteRadio')}
+      >
+        <RouteRadioIcon size={56} />
+      </Pressable>
 
       {userType !== 'driver' && (
         <Pressable
           style={styles.reportButton}
           onPress={() => navigation.navigate('ReportIncident')}
         >
-          <Text style={styles.reportButtonText}>⚠️ Report</Text>
+          <ReportIncidentIcon size={56} />
         </Pressable>
       )}
 
@@ -211,33 +209,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 220,
     right: theme.layout.spacing[5],
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: theme.colors.primary[100],
-    alignItems: 'center',
-    justifyContent: 'center',
     zIndex: 10,
     elevation: 4,
-  },
-  routeRadioIcon: {
-    fontSize: 22,
   },
   reportButton: {
     position: 'absolute',
-    top: 220,
+    top: 288,
     right: theme.layout.spacing[5],
-    backgroundColor: '#FFFFFF',
-    borderRadius: theme.layout.radius.full,
-    paddingHorizontal: theme.layout.spacing[4],
-    paddingVertical: theme.layout.spacing[2],
     zIndex: 10,
     elevation: 4,
-  },
-  reportButtonText: {
-    ...theme.typography.body.b3,
-    fontFamily: theme.typography.fontFamily.bodyMedium,
-    color: theme.colors.neutral[900],
   },
   container: {
     flex: 1,
@@ -261,9 +241,6 @@ const styles = StyleSheet.create({
     borderRadius: theme.layout.radius.full,
     paddingVertical: theme.layout.spacing[3],
     paddingHorizontal: theme.layout.spacing[4],
-  },
-  searchIcon: {
-    marginRight: theme.layout.spacing[2],
   },
   searchPlaceholder: {
     ...theme.typography.body.b2,

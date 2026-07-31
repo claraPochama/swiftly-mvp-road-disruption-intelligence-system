@@ -24,7 +24,7 @@ export default function ChatConversationScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <SimpleHeader title={contactName ?? 'Chat'} onBack={() => navigation.goBack()} />
+      <SimpleHeader title={contactName ?? 'Chat'} onBack={() => navigation.goBack()} backgroundColor="#DFECE0" titleColor="#498058" arrowColor="#498058" />
 
       <FlatList
         data={messages}

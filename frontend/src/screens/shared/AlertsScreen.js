@@ -39,7 +39,7 @@ export default function AlertsScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <SimpleHeader title="Alerts" />
+      <SimpleHeader title="Alerts" backgroundColor="#DFECE0" titleColor="#498058" arrowColor="#498058" />
 
       <View style={styles.searchWrap}>
         <TextInput

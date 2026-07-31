@@ -51,7 +51,7 @@ export default function UpdateIncidentScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <SimpleHeader title="Incident Detail" onBack={() => navigation.goBack()} />
+      <SimpleHeader title="Incident Detail" onBack={() => navigation.goBack()} backgroundColor="#DFECE0" titleColor="#498058" arrowColor="#498058" />
 
       <ScrollView contentContainerStyle={styles.body}>
         <View style={[styles.titleCard, { backgroundColor: config.background }]}>
