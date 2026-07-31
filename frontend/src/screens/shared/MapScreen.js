@@ -3,6 +3,8 @@ import { View, Text, Pressable, FlatList, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { theme } from '../../theme';
 import WarningBanner from '../../components/WarningBanner';
+import RouteRadioIcon from '../../components/icons/RouteRadioIcon';
+import ReportIncidentIcon from '../../components/icons/ReportIncidentIcon';
 import { useUserType } from '../../context/UserTypeContext';
 import { useRoute } from '../../context/RouteContext';
 import { api } from '../../api/client';
