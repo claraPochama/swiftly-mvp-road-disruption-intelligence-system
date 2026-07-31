@@ -1,30 +1,33 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { theme } from '../theme';
 
+// Keyed by the backend severity vocabulary (`low | medium | high`) so live data
+// maps straight through (plan.md A). Traffic-light colours: high=red,
+// medium=orange, low=green.
 export const SEVERITY_CONFIG = {
-  disrupted: {
-    label: 'Disrupted',
+  high: {
+    label: 'High',
     color: theme.colors.red[600],
     dot: theme.colors.red[600],
     background: theme.colors.red[50],
   },
-  caution: {
-    label: 'Caution',
+  medium: {
+    label: 'Medium',
     color: theme.colors.orange[600],
     dot: theme.colors.orange[500],
     background: theme.colors.orange[50],
   },
-  clear: {
-    label: 'Clear',
+  low: {
+    label: 'Low',
     color: theme.colors.green[700],
     dot: theme.colors.green[600],
     background: theme.colors.green[50],
   },
 };
 
-// Usage: <SeverityBadge severity="disrupted" />
+// Usage: <SeverityBadge severity="high" />
 export default function SeverityBadge({ severity }) {
-  const config = SEVERITY_CONFIG[severity] ?? SEVERITY_CONFIG.caution;
+  const config = SEVERITY_CONFIG[severity] ?? SEVERITY_CONFIG.medium;
 
   return (
     <View style={styles.wrap}>

@@ -5,6 +5,7 @@ import { Aboreto_400Regular } from '@expo-google-fonts/aboreto';
 import { View } from 'react-native';
 import RootNavigator from './src/navigation/RootNavigator';
 import { UserTypeProvider } from './src/context/UserTypeContext';
+import { RouteProvider } from './src/context/RouteContext';
 import { AlertsProvider } from './src/context/AlertsContext';
 
 export default function App() {
@@ -21,11 +22,13 @@ export default function App() {
 
   return (
     <UserTypeProvider>
-      <AlertsProvider>
-        <NavigationContainer>
-          <RootNavigator />
-        </NavigationContainer>
-      </AlertsProvider>
+      <RouteProvider>
+        <AlertsProvider>
+          <NavigationContainer>
+            <RootNavigator />
+          </NavigationContainer>
+        </AlertsProvider>
+      </RouteProvider>
     </UserTypeProvider>
   );
 }

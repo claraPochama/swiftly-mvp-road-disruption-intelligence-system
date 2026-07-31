@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+shapely
+geopandas
+python-dotenv
+requests
+anthropic
+PyMetEireann
+async-timeout<5  # PyMetEireann 2024.11 uses the sync `with async_timeout.timeout()`, removed in 5.x

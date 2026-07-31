@@ -1,23 +1,20 @@
-import { useState } from 'react';
-import { View, Text, TextInput, Pressable, FlatList, StyleSheet } from 'react-native';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { View, Text, Pressable, FlatList, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { theme } from '../../theme';
 import WarningBanner from '../../components/WarningBanner';
 import { useUserType } from '../../context/UserTypeContext';
-import RouteRadioIcon from '../../components/icons/RouteRadioIcon';
-import ReportIncidentIcon from '../../components/icons/ReportIncidentIcon';
-import SearchIcon from '../../components/icons/SearchIcon';
+import { useRoute } from '../../context/RouteContext';
+import { api } from '../../api/client';
 
-// Cork, Ireland — matches the region used throughout your prototype screenshots.
+// Cork, Ireland — matches the region used throughout the prototype screenshots.
 const CORK_LAT = 51.8985;
 const CORK_LNG = -8.4756;
 
 // Free map using Leaflet + OpenStreetMap tiles inside a WebView — no API key,
-// no billing, and stays fully compatible with Expo Go (no native map module).
-// To draw GeoJSON from the backend later: pass it in as a prop, JSON.stringify
-// it into this HTML string, and call L.geoJSON(data).addTo(map) in the script
-// below — or use webViewRef.current.injectJavaScript(...) to push data in
-// after the map has already loaded.
+// no billing, Expo Go compatible. `window.drawOverlay(featureCollection)` draws
+// the selected route's segments coloured by worst_severity; we push the backend
+// overlay GeoJSON in via injectJavaScript once both the map and the data are ready.
 const leafletHtml = `
 <!DOCTYPE html>
 <html>
@@ -32,41 +29,91 @@ const leafletHtml = `
     <div id="map"></div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-      var map = L.map('map', { zoomControl: false }).setView([${CORK_LAT}, ${CORK_LNG}], 13);
+      var map = L.map('map', { zoomControl: false }).setView([${CORK_LAT}, ${CORK_LNG}], 11);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
+
+      function colorFor(sev) {
+        if (sev === 'high') return '#D72741';
+        if (sev === 'medium') return '#E16F15';
+        return '#2E7A6C'; // low or none -> clear green
+      }
+
+      var routeLayer = null;
+      window.drawOverlay = function (fc) {
+        if (routeLayer) { map.removeLayer(routeLayer); }
+        routeLayer = L.geoJSON(fc, {
+          style: function (feature) {
+            return {
+              color: colorFor(feature.properties && feature.properties.worst_severity),
+              weight: 6,
+              opacity: 0.85,
+            };
+          },
+        }).addTo(map);
+        try { map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] }); } catch (e) {}
+      };
+      window.ReactNativeWebView && window.ReactNativeWebView.postMessage('map-ready');
     </script>
   </body>
 </html>
 `;
 
-const RECENT_SEARCHES = [
-  { id: '1', title: 'Dublin Airport, Terminal 2', subtitle: 'Dublin' },
-  { id: '2', title: 'Limerick City', subtitle: 'Limerick' },
-  { id: '3', title: 'Blarney Castle & Gardens', subtitle: 'Blarney, Cork' },
-  { id: '4', title: 'Cork Airport', subtitle: 'Cork' },
-];
-
 export default function MapScreen({ navigation }) {
   const { userType } = useUserType();
+  const { routes, selectedRouteId, setSelectedRouteId, selectedRoute } = useRoute();
+  const webViewRef = useRef(null);
+  const mapReadyRef = useRef(false);
+  const [overlay, setOverlay] = useState(null);
   const [searchExpanded, setSearchExpanded] = useState(false);
-  const [startLocation, setStartLocation] = useState('');
-  const [destination, setDestination] = useState('');
+
+  // Fetch the selected route's map overlay (geometry + per-segment severity).
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getOverlay(selectedRouteId)
+      .then((fc) => {
+        if (!cancelled) setOverlay(fc);
+      })
+      .catch(() => {
+        if (!cancelled) setOverlay(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedRouteId]);
+
+  // Push the overlay into the map once both the data and the map are ready.
+  const drawOverlay = useCallback(() => {
+    if (!overlay || !mapReadyRef.current || !webViewRef.current) return;
+    webViewRef.current.injectJavaScript(
+      `window.drawOverlay(${JSON.stringify(overlay)}); true;`
+    );
+  }, [overlay]);
+
+  useEffect(() => {
+    drawOverlay();
+  }, [drawOverlay]);
 
   return (
     <View style={styles.container}>
       <WebView
+        ref={webViewRef}
         style={StyleSheet.absoluteFill}
         originWhitelist={['*']}
         source={{ html: leafletHtml }}
+        onMessage={(event) => {
+          if (event.nativeEvent.data === 'map-ready') {
+            mapReadyRef.current = true;
+            drawOverlay();
+          }
+        }}
         onShouldStartLoadWithRequest={(request) => {
-          // Block only actual navigation to external websites (e.g. tapping
-          // the "Leaflet" attribution link, which would otherwise load
-          // leafletjs.com inside this WebView). This does NOT block the
-          // CDN <script>/<link> tags or map tile images, since those are
-          // resource loads, not top-level navigation.
+          // Block only top-level navigation to external sites (e.g. tapping the
+          // Leaflet attribution link). CDN <script>/<link> and tiles are resource
+          // loads, not navigation, so they still load.
           return !request.url.startsWith('http://') && !request.url.startsWith('https://');
         }}
       />
@@ -89,51 +136,33 @@ export default function MapScreen({ navigation }) {
 
       <View style={styles.topBar}>
         {!searchExpanded ? (
-          <Pressable
-            style={styles.searchPill}
-            onPress={() => setSearchExpanded(true)}
-          >
-            <SearchIcon size={18} />
-            <Text style={styles.searchPlaceholder}>Search</Text>
+          <Pressable style={styles.searchPill} onPress={() => setSearchExpanded(true)}>
+            <Text style={styles.searchIcon}>🔍</Text>
+            <Text style={styles.searchPlaceholder}>{selectedRoute.label}</Text>
           </Pressable>
         ) : (
           <View style={styles.routePanel}>
-            <View style={styles.routeInputs}>
-              <View style={styles.routeRow}>
-                <View style={[styles.routeDot, { backgroundColor: theme.colors.neutral[400] }]} />
-                <TextInput
-                  style={styles.routeInput}
-                  placeholder="Choose start location"
-                  placeholderTextColor={theme.colors.neutral[400]}
-                  value={startLocation}
-                  onChangeText={setStartLocation}
-                />
-              </View>
-              <View style={styles.routeDivider} />
-              <View style={styles.routeRow}>
-                <View style={[styles.routeSquare, { backgroundColor: theme.colors.neutral[400] }]} />
-                <TextInput
-                  style={styles.routeInput}
-                  placeholder="Choose destination"
-                  placeholderTextColor={theme.colors.neutral[400]}
-                  value={destination}
-                  onChangeText={setDestination}
-                />
-              </View>
-            </View>
-
-            <Pressable
-              style={styles.linkRow}
-              onPress={() => {
-                /* TODO: wire up real device location once permissions are set up */
-              }}
-            >
-              <Text style={styles.linkText}>◎ Use my current location</Text>
-            </Pressable>
-
-            <Pressable style={styles.linkRow}>
-              <Text style={styles.linkText}>📍 Choose on Map</Text>
-            </Pressable>
+            <Text style={styles.routePanelLabel}>SELECT A ROUTE</Text>
+            {routes.map((r) => {
+              const isSelected = r.routeId === selectedRouteId;
+              return (
+                <Pressable
+                  key={r.routeId}
+                  style={[styles.routeChoice, isSelected && styles.routeChoiceSelected]}
+                  onPress={() => {
+                    setSelectedRouteId(r.routeId);
+                    setSearchExpanded(false);
+                  }}
+                >
+                  <View style={[styles.routeDot, isSelected && styles.routeDotSelected]} />
+                  <Text
+                    style={[styles.routeChoiceText, isSelected && styles.routeChoiceTextSelected]}
+                  >
+                    {r.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         )}
       </View>
@@ -142,26 +171,31 @@ export default function MapScreen({ navigation }) {
         <View style={styles.expandedBody}>
           <WarningBanner text="Weather alert active – Cork region. Heavy rain forecast, check conditions before departure." />
 
-          <Text style={styles.sectionLabel}>RECENT SEARCHES</Text>
+          <Text style={styles.sectionLabel}>ROUTES</Text>
 
           <FlatList
-            data={RECENT_SEARCHES}
-            keyExtractor={(item) => item.id}
+            data={routes}
+            keyExtractor={(item) => item.routeId}
             renderItem={({ item }) => (
-              <Pressable style={styles.recentItem}>
-                <Text style={styles.recentIcon}>🕐</Text>
+              <Pressable
+                style={styles.recentItem}
+                onPress={() => {
+                  setSelectedRouteId(item.routeId);
+                  setSearchExpanded(false);
+                }}
+              >
+                <Text style={styles.recentIcon}>🛣️</Text>
                 <View>
-                  <Text style={styles.recentTitle}>{item.title}</Text>
-                  <Text style={styles.recentSubtitle}>{item.subtitle}</Text>
+                  <Text style={styles.recentTitle}>{item.label}</Text>
+                  <Text style={styles.recentSubtitle}>
+                    {item.origin} to {item.destination}
+                  </Text>
                 </View>
               </Pressable>
             )}
           />
 
-          <Pressable
-            style={styles.closeSearch}
-            onPress={() => setSearchExpanded(false)}
-          >
+          <Pressable style={styles.closeSearch} onPress={() => setSearchExpanded(false)}>
             <Text style={styles.closeSearchText}>Close</Text>
           </Pressable>
         </View>
@@ -210,49 +244,42 @@ const styles = StyleSheet.create({
   },
   searchPlaceholder: {
     ...theme.typography.body.b2,
-    color: theme.colors.neutral[400],
-    marginLeft: theme.layout.spacing[2],
+    color: theme.colors.neutral[900],
   },
   routePanel: {
     backgroundColor: '#FFFFFF',
     borderRadius: theme.layout.radius[5],
     padding: theme.layout.spacing[4],
   },
-  routeInputs: {
+  routePanelLabel: {
+    ...theme.typography.body.b4,
+    color: theme.colors.neutral[500],
+    letterSpacing: 1,
     marginBottom: theme.layout.spacing[3],
   },
-  routeRow: {
+  routeChoice: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: theme.layout.spacing[2],
+    paddingVertical: theme.layout.spacing[3],
   },
+  routeChoiceSelected: {},
   routeDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: theme.colors.neutral[300],
     marginRight: theme.layout.spacing[3],
   },
-  routeSquare: {
-    width: 8,
-    height: 8,
-    marginRight: theme.layout.spacing[3],
+  routeDotSelected: {
+    backgroundColor: theme.colors.primary[500],
   },
-  routeInput: {
-    flex: 1,
+  routeChoiceText: {
     ...theme.typography.body.b2,
+    color: theme.colors.neutral[700],
+  },
+  routeChoiceTextSelected: {
     color: theme.colors.neutral[900],
-  },
-  routeDivider: {
-    height: 1,
-    backgroundColor: theme.colors.neutral[200],
-    marginLeft: 20,
-  },
-  linkRow: {
-    paddingVertical: theme.layout.spacing[2],
-  },
-  linkText: {
-    ...theme.typography.body.b3,
-    color: theme.colors.primary[600],
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   expandedBody: {
     position: 'absolute',
