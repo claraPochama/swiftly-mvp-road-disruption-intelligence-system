@@ -145,53 +145,62 @@ Six tables, defined in [models.py](models.py):
 ```mermaid
 erDiagram
     Route ||--o{ RouteSegment : "has ordered"
-    RoadSegment ||--o{ RouteSegment : "belongs to"
+    RoadSegment ||--o{ RouteSegment : "is used in"
     RoadSegment ||--o{ DisruptionRecord : "is affected by"
     DisruptionRecord ||--o{ DisruptionUpdate : "has timeline of"
     Route ||--o{ BroadcastScript : "generates"
 
     Route {
-        string route_id
+        string route_id PK "slug, e.g. cork-killarney"
         string origin_label
         string destination_label
     }
     RoadSegment {
-        string id
+        string id PK "slug, e.g. n22-seg-2"
         string road_ref
         string label
         text geometry_geojson
     }
     RouteSegment {
-        int id
-        string route_id
-        string segment_id
+        int id PK "auto-increment"
+        string route_id FK "refs Route.route_id"
+        string segment_id FK "refs RoadSegment.id"
         int sequence_order
     }
     DisruptionRecord {
-        string id
-        string segment_id
+        string id PK "slug, e.g. dr-n22-macroom-heat"
+        string segment_id FK "refs RoadSegment.id"
         string disruption_type
         string source_category
         string stated_or_inferred
         string status
         string severity
         float confidence
+        text description
+        datetime created_at
         datetime expiry
     }
     DisruptionUpdate {
-        string id
-        string disruption_id
+        string id PK "slug, e.g. du-collision-1"
+        string disruption_id FK "refs DisruptionRecord.id"
         string status
         text note
         datetime created_at
     }
     BroadcastScript {
-        int id
-        string route_id
+        int id PK "auto-increment"
+        string route_id FK "refs Route.route_id"
         text script_text
         datetime generated_at
     }
 ```
+
+> **Why some ids are `string` and others `int`.** A table whose rows we *name*
+> gets a readable string key written by hand or by code -- `"n22-seg-2"`,
+> `"dr-n22-macroom-heat"`, and the `"live-metie-…"` prefix that section 8d relies
+> on to spot live warnings. The two pure link/log tables (`RouteSegment`,
+> `BroadcastScript`) have nothing worth naming, so they take an auto-increment
+> integer instead. Only the string keys are ever typed into a URL or a seed file.
 
 In words:
 
