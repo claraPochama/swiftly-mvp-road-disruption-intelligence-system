@@ -7,10 +7,6 @@ import Button from '../../components/Button';
 export default function LoginSignupChooserScreen({ navigation }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // NOTE: this toggle currently only tracks its own on/off state locally.
-  // To actually re-theme the app, this value needs to live in a shared
-  // ThemeContext (or similar) that colors.js / screens read from — a good
-  // next step once you're ready to implement real dark mode support.
   return (
     <View style={styles.container}>
       <View style={styles.header}>

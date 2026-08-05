@@ -18,8 +18,7 @@ const Stack = createNativeStackNavigator();
 // BrandIntro (~1s) -> Splash (~2s) -> Onboarding 1 -> Onboarding 2 -> User Type
 // -> Login/SignUp chooser -> Login OR Signup
 // Screens not built yet use PlaceholderScreen as a stand-in so the whole
-// flow can be clicked through and tested end-to-end. Swap each
-// PlaceholderScreen line for the real component as you build it.
+// flow can be clicked through and tested end-to-end.
 export default function RootNavigator() {
   return (
     <Stack.Navigator

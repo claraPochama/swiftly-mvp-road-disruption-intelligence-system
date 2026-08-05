@@ -2,7 +2,7 @@ import { View, Text, Pressable, FlatList, StyleSheet } from 'react-native';
 import { theme } from '../../theme';
 import SimpleHeader from '../../components/SimpleHeader';
 
-// Mock contacts — same directory shown in your prototype screenshots
+// Mock contacts — same directory shown in prototype
 // (identical list to Passenger's Chats, but leads to a richer coordination
 // view here since Emergency Personnel need incident context, not just chat).
 const CONTACTS = [

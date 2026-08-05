@@ -22,7 +22,7 @@ const PREFERENCES = [
 ];
 
 const ABOUT = [
-  { key: 'version', label: 'App version', value: '2.4.1' },
+  { key: 'version', label: 'App version', value: '0.1.3' },
   { key: 'source', label: 'Data source', value: 'TII Live Feed' },
   { key: 'sync', label: 'Last sync', value: '12:46 today' },
 ];

@@ -1,5 +1,5 @@
 // Mock data standing in for real incident coordination data from the backend.
-// Only "bob" has a live incident thread, matching your prototype screenshot —
+// Only "bob" has a live incident thread —
 // the others get a simple placeholder thread since no detailed content
 // exists for them yet.
 export const COMMS_THREADS = {

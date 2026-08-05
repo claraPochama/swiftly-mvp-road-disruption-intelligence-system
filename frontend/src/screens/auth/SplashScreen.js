@@ -7,7 +7,7 @@ export default function SplashScreen({ navigation }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       navigation.replace('Onboarding1');
-    }, 2000); // adjust delay as needed, or replace with a "Get Started" button instead
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [navigation]);

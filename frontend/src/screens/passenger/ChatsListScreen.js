@@ -2,7 +2,7 @@ import { View, Text, Pressable, FlatList, StyleSheet } from 'react-native';
 import { theme } from '../../theme';
 import SimpleHeader from '../../components/SimpleHeader';
 
-// Mock contacts — matches the list shown in your prototype screenshots.
+// Mock contacts — matches the list shown in  prototype.
 const CONTACTS = [
   { id: 'bob', name: 'Bob', subtitle: 'Collisions, closures' },
   { id: 'nimah', name: 'Nimah', subtitle: 'Road works, flooding' },

@@ -1,10 +1,5 @@
 import Svg, { Path } from 'react-native-svg';
 
-// Only the actual triangle/warning icon shape from the export — the source
-// SVG also included separate vector text glyphs (an "icon + label" combo
-// export), which we skip since the tab bar already renders its own text label.
-// Accepts a color prop so it can match the tab bar's active/inactive tint,
-// same as React Navigation's built-in icon color behavior.
 export default function AlertsTabIcon({ size = 20, color = '#498058' }) {
   return (
     <Svg width={size} height={(size * 27) / 35} viewBox="0 0 35 27" fill="none">

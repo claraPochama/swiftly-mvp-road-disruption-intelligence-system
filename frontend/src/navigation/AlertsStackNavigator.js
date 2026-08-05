@@ -7,9 +7,6 @@ import PendingQueueScreen from '../screens/emergency/PendingQueueScreen';
 
 const Stack = createNativeStackNavigator();
 
-// A tab needs its own stack navigator (rather than just one screen) whenever
-// tapping something inside it should push to a new screen while the bottom
-// tab bar stays visible — e.g. Alerts -> Incident Detail.
 export default function AlertsStackNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>

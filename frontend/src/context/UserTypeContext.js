@@ -2,9 +2,6 @@ import { createContext, useContext, useState } from 'react';
 
 const UserTypeContext = createContext(null);
 
-// Wrap the app in this once (see App.js) so any screen can read/set which
-// role the user picked, without threading it through every navigation
-// call as a param.
 export function UserTypeProvider({ children }) {
   const [userType, setUserType] = useState('driver'); // sensible default while testing
 

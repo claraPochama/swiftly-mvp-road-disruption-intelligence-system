@@ -1,8 +1,5 @@
 import Svg, { Path } from 'react-native-svg';
 
-// Only the calendar icon shape — the source SVG also included separate
-// vector text glyphs (same "icon + label" combo pattern as the Alerts icon),
-// which we skip since the tab bar already renders its own text label.
 export default function WeekAheadTabIcon({ size = 20, color = '#C1D9C4' }) {
   return (
     <Svg width={size} height={(size * 25) / 25} viewBox="16 0 30 30" fill="none">

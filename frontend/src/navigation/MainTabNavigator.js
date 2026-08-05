@@ -16,7 +16,7 @@ import ChatsCommsTabIcon from '../components/icons/ChatsCommsTabIcon.js';
 
 const Tab = createBottomTabNavigator();
 
-// Tabs differ by role, per your prototype:
+// Tabs differ by role, per our prototype:
 //   - Driver: 4 tabs — no Chat/Report Incident (kept hands-free)
 //   - Passenger: 5 tabs — adds "Chats"
 //   - Emergency Personnel: 5 tabs — adds "Comms" instead of "Chats"
