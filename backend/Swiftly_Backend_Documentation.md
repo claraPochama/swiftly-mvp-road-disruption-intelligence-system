@@ -214,7 +214,7 @@ The first three are the **public contract** the frontend depends on; the rest ar
 | Method + URL | Plain-language meaning |
 |---|---|
 | `GET /routes` | "List the available routes." |
-| `GET /routes/{id}/disruptions` | "What problems are currently on this route?" (each includes its `status` and its `updates` timeline) |
+| `GET /routes/{id}/disruptions` | "What problems are currently on this route?" (each includes its `status`, its `updates` timeline, the human road label `road_ref`/`segment_label`, the full `description`, and `created_at`, so the app can render a title, location and detail without a second lookup) |
 | `POST /routes/{id}/broadcast` | "Write me a spoken bulletin for this route." |
 | `GET /routes/{id}/geometry` | "Give me the road lines so I can draw the route on a map." |
 | `GET /routes/{id}/overlay` | "Give me the road lines **plus** a per-segment problem summary, ready to colour on a map." |
