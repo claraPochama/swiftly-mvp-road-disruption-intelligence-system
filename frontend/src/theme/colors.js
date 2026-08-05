@@ -58,7 +58,7 @@ export const neutral = {
   950: '#262626',
 };
 
-// Feedback colors — map directly to your severity system
+// Feedback colors — map directly to the severity system
 export const red = {
   50: '#FEEDED',
   100: '#FEE5E5',

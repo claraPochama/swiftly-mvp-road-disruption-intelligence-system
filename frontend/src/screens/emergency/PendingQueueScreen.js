@@ -62,7 +62,7 @@ export default function PendingQueueScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <SimpleHeader title="Pending Reports" onBack={() => navigation.goBack()} />
+      <SimpleHeader title="Pending Reports" onBack={() => navigation.goBack()} backgroundColor="#DFECE0" titleColor="#498058" arrowColor="#498058" />
 
       <FlatList
         data={items}

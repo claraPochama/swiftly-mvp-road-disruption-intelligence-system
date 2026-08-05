@@ -2,7 +2,6 @@ fastapi
 uvicorn[standard]
 sqlalchemy
 shapely
-geopandas
 python-dotenv
 requests
 anthropic

@@ -10,15 +10,13 @@ import SignupScreen from '../screens/auth/SignupScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import VerifyAccountScreen from '../screens/auth/VerifyAccountScreen';
 import MainTabNavigator from './MainTabNavigator';
-import PlaceholderScreen from '../screens/PlaceholderScreen';
 
 const Stack = createNativeStackNavigator();
 
 // Pre-login flow:
 // BrandIntro (~1s) -> Splash (~2s) -> Onboarding 1 -> Onboarding 2 -> User Type
 // -> Login/SignUp chooser -> Login OR Signup
-// Screens not built yet use PlaceholderScreen as a stand-in so the whole
-// flow can be clicked through and tested end-to-end.
+// Every screen in the flow is built, so it can be clicked through end-to-end.
 export default function RootNavigator() {
   return (
     <Stack.Navigator

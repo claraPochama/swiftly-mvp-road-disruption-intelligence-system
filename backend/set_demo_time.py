@@ -1,6 +1,6 @@
 """Re-anchor the seeded disruption timestamps onto a demo date/time.
 
-seed.py stamps its fixture records with whatever `now` was when you ran it, so a
+seed.py stamps its fixture records with whatever `now` was at the time it ran, so a
 DB seeded a few days before a demo shows "2 days ago" on every alert card. This
 script shifts every seeded row (ids prefixed "dr-" / "du-") by a single constant
 delta so the whole set lands on the demo slot while keeping its internal shape:

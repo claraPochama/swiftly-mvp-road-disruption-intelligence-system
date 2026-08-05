@@ -4,7 +4,7 @@ import { theme } from '../../theme';
 import SimpleHeader from '../../components/SimpleHeader';
 
 // Starting mock thread — just enough to show the conversation UI working.
-// No backend wired up yet, so messages you send only exist locally.
+// No backend wired up yet, so messages sent from this screen only exist locally.
 const INITIAL_MESSAGES = [
   { id: '1', from: 'them', text: 'Any updates on the N22 flooding near Ballincollig?' },
   { id: '2', from: 'me', text: 'Still closed as of 10 minutes ago, diversion via R608.' },
