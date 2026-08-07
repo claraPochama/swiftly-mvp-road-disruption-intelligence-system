@@ -16,12 +16,6 @@ const VERIFICATION_METHODS = [
   'Others',
 ];
 
-// Static demo AI copy — the backend has no AI-assessment field (plan.md G is
-// deferred pending design), so this text is illustrative only.
-const AI_CONFIDENCE_PERCENT = 80;
-const AI_CONFIDENCE_EXPLANATION =
-  'Report timing and description align with the expected pattern. No contradicting reports found.';
-
 export default function VerifyIncidentScreen({ route, navigation }) {
   const { alertId } = route.params ?? {};
   const { alerts, verifyAlert } = useAlerts();
@@ -82,20 +76,6 @@ export default function VerifyIncidentScreen({ route, navigation }) {
               : 'Official source'}
           </Text>
           <Text style={styles.reportCount}>Status: {alert.statusLabel}</Text>
-        </View>
-
-        <View style={styles.aiCard}>
-          <Text style={styles.aiLabel}>AI CONFIDENCE ASSESSMENT</Text>
-          <View style={styles.confidenceRow}>
-            <Text style={styles.confidenceMatchLabel}>Report matches TII road data</Text>
-            <Text style={styles.confidencePercent}>{AI_CONFIDENCE_PERCENT}%</Text>
-          </View>
-          <View style={styles.confidenceBarTrack}>
-            <View
-              style={[styles.confidenceBarFill, { width: `${AI_CONFIDENCE_PERCENT}%` }]}
-            />
-          </View>
-          <Text style={styles.aiText}>{AI_CONFIDENCE_EXPLANATION}</Text>
         </View>
 
         <Text style={styles.sectionLabel}>HOW DID YOU VERIFY THIS?</Text>
@@ -191,51 +171,7 @@ const styles = StyleSheet.create({
     color: theme.colors.neutral[900],
     marginTop: theme.layout.spacing[1],
   },
-  aiCard: {
-    backgroundColor: theme.colors.secondaryWarm[50],
-    borderWidth: theme.layout.stroke[0],
-    borderColor: theme.colors.secondaryWarm[300],
-    borderRadius: theme.layout.radius[4],
-    padding: theme.layout.spacing[4],
-    marginBottom: theme.layout.spacing[5],
-  },
-  aiLabel: {
-    ...theme.typography.body.b4,
-    fontFamily: theme.typography.fontFamily.headingBold,
-    color: theme.colors.secondaryWarm[700],
-    marginBottom: theme.layout.spacing[2],
-  },
-  confidenceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: theme.layout.spacing[1],
-  },
-  confidenceMatchLabel: {
-    ...theme.typography.body.b3,
-    fontFamily: theme.typography.fontFamily.bodyMedium,
-    color: theme.colors.secondaryWarm[700],
-  },
-  confidencePercent: {
-    ...theme.typography.body.b3,
-    fontFamily: theme.typography.fontFamily.headingBold,
-    color: theme.colors.secondaryWarm[700],
-  },
-  confidenceBarTrack: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: theme.colors.secondaryWarm[200],
-    marginBottom: theme.layout.spacing[3],
-  },
-  confidenceBarFill: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: theme.colors.secondaryWarm[600],
-  },
-  aiText: {
-    ...theme.typography.body.b3,
-    color: theme.colors.secondaryWarm[700],
-    lineHeight: 20,
-  },
+  
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
