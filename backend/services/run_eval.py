@@ -1,13 +1,13 @@
 """Runs the 20-case eval against the real generate_script() in broadcast.py.
 
 Usage:
-    $env:ANTHROPIC_API_KEY = "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"   # your own key, never shared with anyone else
+    $env:ANTHROPIC_API_KEY = "...."   
     python3 run_eval.py
 
 Runs the 20-case eval against the real generate_script() in broadcast.py.
 
 Usage:
-    export ANTHROPIC_API_KEY=sk-ant-...   # your own key, never shared with anyone else
+    export ANTHROPIC_API_KEY=sk-ant-...   
     python3 run_eval.py
 
 Writes results.md with the raw output for every case, plus a few mechanical
